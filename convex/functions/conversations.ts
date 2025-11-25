@@ -2,11 +2,14 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 
 export const getConversationsForUser = query({
-  args: { },
+  args: {},
   handler: async (ctx, args) => {
-    const externalId = "12345678"
+    const externalId = "12345678";
 
-    const user = await ctx.db.query("users").filter((q) => q.eq(q.field("externalId"), externalId)).first();
+    const user = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("externalId"), externalId))
+      .first();
 
     if (!user) {
       throw new Error("User not found");
@@ -15,7 +18,7 @@ export const getConversationsForUser = query({
     const conversations = await ctx.db.query("conversations").collect();
 
     return conversations.filter((conversation) =>
-      conversation.participants.includes(user?._id),
+      conversation.participantIds.includes(user?._id),
     );
   },
 });
@@ -35,17 +38,29 @@ export const getConversationById = query({
 
 export const createConversation = mutation({
   args: {
-    sender: v.id("users"),
-    receiver: v.id("users"),
+    receiverId: v.id("users"),
   },
-  handler: async (ctx, { sender, receiver }) => {
-    // Check if conversation already exists between these users
+  handler: async (ctx, { receiverId }) => {
+    const externalId = "12345678";
+
+    // Get the sender user by externalId
+    const sender = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("externalId"), externalId))
+      .first();
+
+    if (!sender) {
+      throw new Error("Sender not found");
+    }
+
+    const senderId = sender._id;
+
     const existingConversation = await ctx.db
       .query("conversations")
       .filter((q) =>
         q.or(
-          q.and(q.eq(q.field("participants"), [sender, receiver])),
-          q.and(q.eq(q.field("participants"), [sender, receiver])),
+          q.and(q.eq(q.field("participantIds"), [senderId, receiverId])),
+          q.and(q.eq(q.field("participantIds"), [receiverId, senderId])),
         ),
       )
       .first();
@@ -54,14 +69,14 @@ export const createConversation = mutation({
       return existingConversation._id;
     }
 
+    // Create new conversation
     return await ctx.db.insert("conversations", {
-      participants: [sender, receiver],
+      participantIds: [senderId, receiverId],
       updatedAt: Date.now(),
     });
   },
 });
 
-// Delete a conversation
 export const deleteConversation = mutation({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {

@@ -6,10 +6,10 @@ export default function TabsLayout() {
   return (
     <NativeTabs
       blurEffect="prominent"
-      tintColor={ThemeColors.light.tint}
+      tintColor={ThemeColors.primary.base}
       minimizeBehavior="onScrollDown"
     >
-      <NativeTabs.Trigger name="index">
+      <NativeTabs.Trigger name="chats">
         <Label>Chats</Label>
         <Icon
           sf={{

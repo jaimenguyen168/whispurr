@@ -9,6 +9,7 @@ export default function CoreLayout() {
       }}
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(chat)/[conversationId]" />
     </Stack>
   );
 }

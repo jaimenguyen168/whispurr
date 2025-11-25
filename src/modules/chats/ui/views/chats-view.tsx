@@ -1,4 +1,4 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -14,6 +14,8 @@ import {
   ChatsHeader1,
   ChatsHeader2,
 } from "@/src/modules/chats/ui/components/ChatsHeader";
+import { Conversation } from "@/src/types/convex";
+import ConversationItem from "@/src/modules/chats/ui/components/ConversationItem";
 
 const HEADER_HEIGHT = 60;
 
@@ -27,24 +29,20 @@ const ChatsView = () => {
     },
   });
 
+  const currentUserId = "j57aaja4jbfafbpjhqj8ba36kh7w0nxg";
   const conversations = useQuery(
     api.functions.conversations.getConversationsForUser,
   );
-
-  const fakeData = Array.from({ length: 10 }, (_, index) => ({
-    id: index + 1,
-    number: index + 1,
-  }));
 
   if (!conversations) {
     return <ConversationsLoading />;
   }
 
-  const renderItem = ({ item }: { item: { id: number; number: number } }) => (
-    <View className="p-4 border-b border-gray-200">
-      <Text className="text-lg">Item {item.number}</Text>
-    </View>
-  );
+  const renderConversationItem = ({ item }: { item: Conversation }) => {
+    return (
+      <ConversationItem conversation={item} currentUserId={currentUserId} />
+    );
+  };
 
   return (
     <View className="flex-1">
@@ -58,13 +56,17 @@ const ChatsView = () => {
         <ConversationsEmpty />
       ) : (
         <Animated.FlatList
-          data={fakeData}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
+          data={conversations}
+          renderItem={renderConversationItem}
+          keyExtractor={(item) => item._id}
           onScroll={scrollHandler}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingTop: insets.top + HEADER_HEIGHT }}
+          contentContainerStyle={{
+            paddingTop: insets.top + HEADER_HEIGHT + 20,
+            paddingBottom: HEADER_HEIGHT,
+            paddingHorizontal: 16,
+          }}
         />
       )}
     </View>

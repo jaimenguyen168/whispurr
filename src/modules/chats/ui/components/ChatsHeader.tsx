@@ -10,8 +10,8 @@ export const ChatsHeader1 = ({
 }) => {
   return (
     <View className="px-4 py-3 flex-row justify-between items-center">
-      <Link href={"/"} asChild>
-        <TouchableOpacity className="flex-row items-center rounded-2xl gap-2">
+      <Link href={"/chats"} asChild>
+        <TouchableOpacity className="flex-row items-center rounded-2xl gap-2 ml-1">
           <View className="rounded-full items-center justify-center size-10 bg-primary-100">
             <Ionicons
               name="chatbubble-ellipses-outline"
@@ -25,13 +25,13 @@ export const ChatsHeader1 = ({
 
       <View className="flex-row gap-2">
         {conversations.length > 0 && (
-          <Link href={"/"} asChild>
+          <Link href={"/chats/add-conversation"} asChild>
             <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
               <Ionicons name="search" size={18} color="#081c15" />
             </TouchableOpacity>
           </Link>
         )}
-        <Link href={"/"} asChild>
+        <Link href={"/chats/add-conversation"} asChild>
           <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
             <Ionicons name="add" size={22} color="#081c15" />
           </TouchableOpacity>
@@ -47,14 +47,14 @@ export const ChatsHeader2 = (
       <Text className="font-bold text-lg text-primary-600 mb-0.5">
         Whispurr
       </Text>
-      <Link href={"/"} asChild>
+      <Link href={"/chats"} asChild>
         <TouchableOpacity className="flex-row items-center gap-0.5">
           <Text className="text-xs text-primary-600">Chats</Text>
         </TouchableOpacity>
       </Link>
     </View>
     <View className="flex-row gap-2">
-      <Link href={"/"} asChild>
+      <Link href={"/chats/add-conversation"} asChild>
         <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
           <Ionicons name="add" size={22} color="#081c15" />
         </TouchableOpacity>

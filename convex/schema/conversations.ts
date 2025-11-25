@@ -2,13 +2,13 @@ import { v } from "convex/values";
 import { defineTable } from "convex/server";
 
 export const conversations = defineTable({
-  participants: v.array(v.id("users")),
+  participantIds: v.array(v.id("users")),
   lastMessage: v.optional(v.string()),
   lastMessageAt: v.optional(v.number()),
   lastMessageBy: v.optional(v.id("users")),
-  updatedAt: v.number(),
+  updatedAt: v.optional(v.number()),
 })
-  .index("by_participant", ["participants"])
+  .index("by_participant_ids", ["participantIds"])
   .index("by_last_message", ["lastMessageAt"]);
 
 export const messages = defineTable({
