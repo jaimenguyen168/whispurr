@@ -11,6 +11,11 @@ import {
   Nunito_700Bold,
   Nunito_800ExtraBold,
 } from "@expo-google-fonts/nunito";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+
+const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
+  unsavedChangesWarning: false,
+});
 
 export default function RootLayout() {
   let [fontsLoaded] = useFonts({
@@ -28,8 +33,10 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView>
-      <Slot />
-    </GestureHandlerRootView>
+    <ConvexProvider client={convex}>
+      <GestureHandlerRootView>
+        <Slot />
+      </GestureHandlerRootView>
+    </ConvexProvider>
   );
 }

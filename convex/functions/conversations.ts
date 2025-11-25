@@ -2,12 +2,20 @@ import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 
 export const getConversationsForUser = query({
-  args: { userId: v.id("users") },
+  args: { },
   handler: async (ctx, args) => {
+    const externalId = "12345678"
+
+    const user = await ctx.db.query("users").filter((q) => q.eq(q.field("externalId"), externalId)).first();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
     const conversations = await ctx.db.query("conversations").collect();
 
     return conversations.filter((conversation) =>
-      conversation.participants.includes(args.userId),
+      conversation.participants.includes(user?._id),
     );
   },
 });
