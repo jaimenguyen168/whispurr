@@ -31,7 +31,7 @@ const ConversationItem = ({
 
   return (
     <TouchableOpacity
-      className="flex-row items-center py-3 bg-white border-b border-gray-100"
+      className="flex-row items-center py-3 bg-transparent border-b  border-secondary-300"
       activeOpacity={0.7}
       onPress={() => router.push(`/(chat)/${conversation._id}`)}
     >
@@ -52,7 +52,7 @@ const ConversationItem = ({
       {/* Content */}
       <View className="flex-1">
         <View className="flex-row justify-between items-center mb-1">
-          <Text className="font-semibold text-base text-gray-900">
+          <Text className="font-bold text-base text-gray-900">
             {otherParticipant.username}
           </Text>
           <Text className="text-xs text-gray-500">
@@ -61,7 +61,7 @@ const ConversationItem = ({
         </View>
 
         <Text
-          className="text-sm text-gray-500"
+          className="text-sm text-gray-600"
           numberOfLines={1}
           ellipsizeMode="tail"
         >

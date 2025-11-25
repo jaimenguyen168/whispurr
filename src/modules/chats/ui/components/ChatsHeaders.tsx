@@ -43,7 +43,8 @@ export const ChatsHeader1 = ({
 
 export const ChatsHeader2 = (
   <View className="px-4 py-3 flex-row justify-between items-center">
-    <View className="flex-1 items-center pl-10">
+    <View className="size-10" />
+    <View className="flex-1 items-center">
       <Text className="font-bold text-lg text-primary-600 mb-0.5">
         Whispurr
       </Text>
@@ -53,12 +54,10 @@ export const ChatsHeader2 = (
         </TouchableOpacity>
       </Link>
     </View>
-    <View className="flex-row gap-2">
-      <Link href={"/chats/add-conversation"} asChild>
-        <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
-          <Ionicons name="add" size={22} color="#081c15" />
-        </TouchableOpacity>
-      </Link>
-    </View>
+    <Link href={"/chats/add-conversation"} asChild>
+      <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
+        <Ionicons name="add" size={22} color="#081c15" />
+      </TouchableOpacity>
+    </Link>
   </View>
 );

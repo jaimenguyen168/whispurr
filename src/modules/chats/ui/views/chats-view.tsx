@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ChatsHeader1,
   ChatsHeader2,
-} from "@/src/modules/chats/ui/components/ChatsHeader";
+} from "@/src/modules/chats/ui/components/ChatsHeaders";
 import { Conversation } from "@/src/types/convex";
 import ConversationItem from "@/src/modules/chats/ui/components/ConversationItem";
 
@@ -44,6 +44,9 @@ const ChatsView = () => {
     );
   };
 
+  const paddingTop =
+    insets.top + (conversations.length === 0 ? 0 : HEADER_HEIGHT + 20);
+
   return (
     <View className="flex-1">
       <AnimatedHeader
@@ -52,23 +55,21 @@ const ChatsView = () => {
         header1={ChatsHeader1({ conversations })}
         header2={ChatsHeader2}
       />
-      {conversations.length === 0 ? (
-        <ConversationsEmpty />
-      ) : (
-        <Animated.FlatList
-          data={conversations}
-          renderItem={renderConversationItem}
-          keyExtractor={(item) => item._id}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingTop: insets.top + HEADER_HEIGHT + 20,
-            paddingBottom: HEADER_HEIGHT,
-            paddingHorizontal: 16,
-          }}
-        />
-      )}
+      <Animated.FlatList
+        data={conversations}
+        renderItem={renderConversationItem}
+        keyExtractor={(item) => item._id}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          flex: 1,
+          paddingTop,
+          paddingBottom: HEADER_HEIGHT,
+          paddingHorizontal: 16,
+        }}
+        ListEmptyComponent={ConversationsEmpty}
+      />
     </View>
   );
 };

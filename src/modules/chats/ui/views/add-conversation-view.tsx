@@ -58,7 +58,7 @@ const AddConversationView = () => {
 
   const renderUserItem = ({ item }: { item: User }) => (
     <TouchableOpacity
-      className="flex-row items-center p-4 border-b border-gray-100"
+      className="flex-row items-center mx-4 py-3 border-b border-gray-100"
       activeOpacity={0.7}
       onPress={() => handleUserPress(item)}
     >

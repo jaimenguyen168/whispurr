@@ -6,7 +6,9 @@ export default function ChatsLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#fff" },
+        contentStyle: {
+          backgroundColor: "#fff",
+        },
       }}
     >
       <Stack.Screen name="index" />
