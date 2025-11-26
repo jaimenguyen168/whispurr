@@ -38,6 +38,7 @@ const MessageInput = ({
           autoCapitalize="none"
           placeholder={placeholder}
           className="flex-1 rounded-2xl bg-secondary-50 p-4"
+          placeholderTextColor={ThemeColors.secondary.base}
           multiline
           numberOfLines={5}
           editable={!disabled}

@@ -142,7 +142,7 @@ export const ConversationHeader2 = ({
         <Text className="text-sm text-primary-600">Active 10m ago</Text>
       </View>
 
-      <View className="rounded-full items-center justify-center size-11 bg-primary-100 pb-1">
+      <View className="rounded-full items-center justify-center size-11 bg-primary-100 pb-2">
         <Host matchContents>
           <ContextMenu>
             <ContextMenu.Items>
