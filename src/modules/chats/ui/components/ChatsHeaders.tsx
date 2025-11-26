@@ -2,23 +2,28 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { Link } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Conversation } from "@/src/types/convex";
+import { Image } from "expo-image";
+import { Icons } from "@/src/constants/Icons";
 
 export const ChatsHeader1 = ({
   conversations,
 }: {
   conversations: Conversation[];
 }) => {
+  const { whispurrIcon } = Icons;
   return (
     <View className="px-4 py-3 flex-row justify-between items-center">
       <Link href={"/chats"} asChild>
         <TouchableOpacity className="flex-row items-center rounded-2xl gap-2 ml-1">
-          <View className="rounded-full items-center justify-center size-10 bg-primary-100">
-            <Ionicons
-              name="chatbubble-ellipses-outline"
-              size={20}
-              color="#081c15"
-            />
-          </View>
+          {/*<View className="rounded-full items-center justify-center size-10 bg-primary-100">*/}
+          <Image
+            source={whispurrIcon}
+            style={{
+              width: 36,
+              height: 36,
+            }}
+          />
+          {/*</View>*/}
           <Text className="font-bold text-lg text-primary-600">Whispurr</Text>
         </TouchableOpacity>
       </Link>
