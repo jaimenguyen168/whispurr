@@ -24,6 +24,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
+import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -204,35 +205,13 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         />
       </View>
 
-      <View className="bg-white pb-7 px-6 pt-3">
-        <View className="flex-row items-end gap-2 justify-between">
-          <TouchableOpacity className="rounded-full items-center justify-center size-10">
-            <Ionicons name="add" size={32} color={ThemeColors.primary.main} />
-          </TouchableOpacity>
-
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            autoCorrect={false}
-            autoCapitalize="none"
-            placeholder="Type a message"
-            className="flex-1 rounded-2xl bg-secondary-50 p-4"
-            multiline
-            numberOfLines={5}
-          />
-
-          <TouchableOpacity
-            className="rounded-full items-center justify-center size-10"
-            onPress={sendMessage}
-          >
-            <Ionicons
-              name="paper-plane-outline"
-              size={28}
-              color={ThemeColors.primary.main}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <MessageInput
+        message={message}
+        onMessageChange={setMessage}
+        onSendMessage={sendMessage}
+        onAddAttachment={() => console.log("Add attachment")}
+        disabled={isDeleting}
+      />
     </View>
   );
 };
