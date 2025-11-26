@@ -48,7 +48,10 @@ const SwipeAction = ({ threshold, prog, drag }: SwipeActionProps) => {
   });
 
   return (
-    <Reanimated.View className="bg-red-500 flex-1 justify-center items-end">
+    <Reanimated.View
+      className="bg-red-500 flex-1 justify-center items-end"
+      style={{ width: 100 }}
+    >
       <Reanimated.View
         className="w-[50px] h-full justify-center items-center"
         style={iconStyleAnimation}

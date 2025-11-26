@@ -38,6 +38,7 @@ export const createMessage = mutation({
       lastMessage: args.content,
       lastMessageAt: Date.now(),
       lastMessageBy: args.senderId,
+      lastMessageEncryptionKey: args.encryptionKey,
       updatedAt: Date.now(),
     });
 
@@ -72,38 +73,95 @@ export const updateMessageContent = mutation({
     encryptionKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Get the message to check if it's the last message in its conversation
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    // Update the message
     await ctx.db.patch(args.messageId, {
       content: args.content,
       encryptionKey: args.encryptionKey,
       updatedAt: Date.now(),
     });
 
+    // Check if this is the last message in the conversation
+    const conversation = await ctx.db.get(message.conversationId);
+    if (!conversation) return { success: true };
+
+    // Get the most recent message to see if we need to update the conversation's last message
+    const lastMessage = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", message.conversationId),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .order("desc")
+      .first();
+
+    // If this is the last message, update the conversation
+    if (lastMessage && lastMessage._id === args.messageId) {
+      await ctx.db.patch(message.conversationId, {
+        lastMessage: args.content,
+        lastMessageEncryptionKey: args.encryptionKey,
+        updatedAt: Date.now(),
+      });
+    }
+
     return { success: true };
   },
 });
 
-// Delete a message (soft delete)
 export const deleteMessage = mutation({
   args: {
     messageId: v.id("messages"),
     deletedBy: v.id("users"),
   },
   handler: async (ctx, args) => {
+    // Get the message before deleting
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    // Soft delete the message
     await ctx.db.patch(args.messageId, {
       deletedAt: Date.now(),
       deletedBy: args.deletedBy,
       updatedAt: Date.now(),
     });
 
-    return { success: true };
-  },
-});
+    // Check if this was the last message in the conversation
+    const conversation = await ctx.db.get(message.conversationId);
+    if (!conversation) return { success: true };
 
-// Permanently delete a message (hard delete)
-export const permanentlyDeleteMessage = mutation({
-  args: { messageId: v.id("messages") },
-  handler: async (ctx, args) => {
-    await ctx.db.delete(args.messageId);
+    // If this was the last message, find the new last message
+    const newLastMessage = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", message.conversationId),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .order("desc")
+      .first();
+
+    // Update conversation with new last message info
+    if (newLastMessage) {
+      await ctx.db.patch(message.conversationId, {
+        lastMessage: newLastMessage.content,
+        lastMessageAt: newLastMessage.updatedAt,
+        lastMessageBy: newLastMessage.senderId,
+        lastMessageEncryptionKey: newLastMessage.encryptionKey,
+        updatedAt: Date.now(),
+      });
+    } else {
+      // No messages left, clear last message data
+      await ctx.db.patch(message.conversationId, {
+        lastMessage: undefined,
+        lastMessageAt: undefined,
+        lastMessageBy: undefined,
+        lastMessageEncryptionKey: undefined,
+        updatedAt: Date.now(),
+      });
+    }
+
     return { success: true };
   },
 });

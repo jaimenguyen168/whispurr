@@ -6,6 +6,7 @@ export const conversations = defineTable({
   lastMessage: v.optional(v.string()),
   lastMessageAt: v.optional(v.number()),
   lastMessageBy: v.optional(v.id("users")),
+  lastMessageEncryptionKey: v.optional(v.string()),
   updatedAt: v.optional(v.number()),
 })
   .index("by_participant_ids", ["participantIds"])

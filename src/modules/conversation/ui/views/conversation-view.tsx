@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, ActivityIndicator, Alert } from "react-native";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -24,6 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
+import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
+import { encryptMessage } from "@/src/modules/conversation/utils";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -70,12 +65,19 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     if (!message.trim() || !currentUser) return;
 
     try {
+      const { encryptedContent, encryptionKey } = await encryptMessage(
+        message.trim(),
+        conversationId,
+      );
+
       await createMessage({
         conversationId,
         senderId: currentUser._id,
-        content: message.trim(),
+        content: encryptedContent,
+        encryptionKey: encryptionKey,
         type: "text",
       });
+
       setMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
@@ -204,35 +206,13 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         />
       </View>
 
-      <View className="bg-white pb-7 px-6 pt-3">
-        <View className="flex-row items-end gap-2 justify-between">
-          <TouchableOpacity className="rounded-full items-center justify-center size-10">
-            <Ionicons name="add" size={32} color={ThemeColors.primary.main} />
-          </TouchableOpacity>
-
-          <TextInput
-            value={message}
-            onChangeText={setMessage}
-            autoCorrect={false}
-            autoCapitalize="none"
-            placeholder="Type a message"
-            className="flex-1 rounded-2xl bg-secondary-50 p-4"
-            multiline
-            numberOfLines={5}
-          />
-
-          <TouchableOpacity
-            className="rounded-full items-center justify-center size-10"
-            onPress={sendMessage}
-          >
-            <Ionicons
-              name="paper-plane-outline"
-              size={28}
-              color={ThemeColors.primary.main}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <MessageInput
+        message={message}
+        onMessageChange={setMessage}
+        onSendMessage={sendMessage}
+        onAddAttachment={() => console.log("Add attachment")}
+        disabled={isDeleting}
+      />
     </View>
   );
 };

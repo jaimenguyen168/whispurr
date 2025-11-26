@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
@@ -6,6 +6,7 @@ import { Message, User } from "@/src/types/convex";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { formatTime } from "@/src/utils/time";
+import { decryptMessage } from "@/src/modules/conversation/utils";
 
 interface MessageItemProps {
   message: Message;
@@ -14,6 +15,21 @@ interface MessageItemProps {
 
 const MessageItem = ({ message, otherUser }: MessageItemProps) => {
   const isFromOtherUser = message.senderId === otherUser?._id;
+
+  const [decryptedContent, setDecryptedContent] = useState("");
+
+  useEffect(() => {
+    const decryptContent = async () => {
+      const decrypted = await decryptMessage(
+        message.content,
+        message.conversationId,
+        message.encryptionKey || "",
+      );
+      setDecryptedContent(decrypted);
+    };
+
+    decryptContent();
+  }, [message]);
 
   const getStatusIcon = (status: Message["status"]) => {
     switch (status) {
@@ -86,7 +102,7 @@ const MessageItem = ({ message, otherUser }: MessageItemProps) => {
             isFromOtherUser ? "text-secondary-800" : "text-white"
           }`}
         >
-          {message.content}
+          {decryptedContent}
         </Text>
 
         <View
