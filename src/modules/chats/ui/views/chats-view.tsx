@@ -66,9 +66,15 @@ const ChatsView = () => {
           flex: 1,
           paddingTop,
           paddingBottom: HEADER_HEIGHT,
-          paddingHorizontal: 16,
         }}
         ListEmptyComponent={ConversationsEmpty}
+        ListHeaderComponent={() => <View className="h-px bg-secondary-100" />}
+        ItemSeparatorComponent={() => (
+          <View className="h-px bg-secondary-100 -mt-5" />
+        )}
+        ListFooterComponent={() => (
+          <View className="h-px bg-secondary-100 -mt-5" />
+        )}
       />
     </View>
   );

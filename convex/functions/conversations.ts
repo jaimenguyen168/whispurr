@@ -15,7 +15,11 @@ export const getConversationsForUser = query({
       throw new Error("User not found");
     }
 
-    const conversations = await ctx.db.query("conversations").collect();
+    const conversations = await ctx.db
+      .query("conversations")
+      .withIndex("by_updated_at")
+      .order("desc")
+      .collect();
 
     return conversations.filter((conversation) =>
       conversation.participantIds.includes(user?._id),

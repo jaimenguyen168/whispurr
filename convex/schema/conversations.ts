@@ -9,7 +9,8 @@ export const conversations = defineTable({
   updatedAt: v.optional(v.number()),
 })
   .index("by_participant_ids", ["participantIds"])
-  .index("by_last_message", ["lastMessageAt"]);
+  .index("by_last_message", ["lastMessageAt"])
+  .index("by_updated_at", ["updatedAt"]);
 
 export const messages = defineTable({
   conversationId: v.id("conversations"),

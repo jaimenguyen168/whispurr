@@ -1,5 +1,12 @@
-import { View, Text, TouchableOpacity, TextInput } from "react-native";
-import React from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ConversationId, Message } from "@/src/types/convex";
@@ -16,6 +23,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
+import { router } from "expo-router";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -24,7 +32,8 @@ interface ConversationViewProps {
 const HEADER_HEIGHT = 60;
 
 const ConversationView = ({ conversationId }: ConversationViewProps) => {
-  const [message, setMessage] = React.useState("");
+  const [message, setMessage] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
@@ -37,18 +46,23 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
 
   const conversation = useQuery(
     api.functions.conversations.getConversationById,
-    { conversationId },
+    isDeleting ? "skip" : { conversationId },
+  );
+  const deleteConversation = useMutation(
+    api.functions.conversations.deleteConversation,
   );
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
 
-  const otherUser = useQuery(api.functions.users.getOtherUserByConversationId, {
-    conversationId,
-  });
+  const otherUser = useQuery(
+    api.functions.users.getOtherUserByConversationId,
+    isDeleting ? "skip" : { conversationId },
+  );
 
-  const messages = useQuery(api.functions.messages.getMessagesForConversation, {
-    conversationId,
-  });
+  const messages = useQuery(
+    api.functions.messages.getMessagesForConversation,
+    isDeleting ? "skip" : { conversationId },
+  );
 
   const createMessage = useMutation(api.functions.messages.createMessage);
 
@@ -62,11 +76,57 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         content: message.trim(),
         type: "text",
       });
-      setMessage(""); // Clear the input after successful send
+      setMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
     }
   };
+
+  const executeDeleteConversation = async () => {
+    try {
+      setIsDeleting(true);
+      await deleteConversation({ conversationId });
+      router.dismiss();
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      setIsDeleting(false);
+      Alert.alert("Error", "Failed to delete conversation. Please try again.");
+    }
+  };
+
+  const handleDeleteConversation = () => {
+    Alert.alert(
+      "Delete Conversation",
+      `Are you sure you want to delete this conversation with ${otherUser?.username}? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: executeDeleteConversation,
+        },
+      ],
+    );
+  };
+
+  const handleBack = async () => {
+    if (messages?.length === 0) {
+      await executeDeleteConversation();
+    } else {
+      router.dismiss();
+    }
+  };
+
+  if (isDeleting) {
+    return (
+      <View className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" color={ThemeColors.primary.main} />
+      </View>
+    );
+  }
 
   if (!conversation || !otherUser || !currentUser) {
     return (
@@ -96,13 +156,33 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     </View>
   );
 
+  const headerActions = {
+    onPin: () => console.log("Pin conversation"),
+    onReport: () => console.log("Report user"),
+    onDelete: handleDeleteConversation,
+    onCall: () => console.log("Start voice call"),
+    onVideoCall: () => console.log("Start video call"),
+  };
+
   return (
     <View className="flex-1">
       <AnimatedHeader
         scrollThreshold={HEADER_HEIGHT}
         scrollOffset={scrollOffset}
-        header1={<ConversationHeader1 user={otherUser} />}
-        header2={<ConversationHeader2 user={otherUser} />}
+        header1={
+          <ConversationHeader1
+            user={otherUser}
+            onBack={handleBack}
+            actions={headerActions}
+          />
+        }
+        header2={
+          <ConversationHeader2
+            user={otherUser}
+            onBack={handleBack}
+            actions={headerActions}
+          />
+        }
       />
 
       <View className="flex-1">
@@ -156,4 +236,5 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     </View>
   );
 };
+
 export default ConversationView;
