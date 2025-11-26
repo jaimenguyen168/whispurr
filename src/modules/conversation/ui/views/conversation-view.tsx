@@ -1,11 +1,4 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-} from "react-native";
+import { View, Text, ActivityIndicator, Alert } from "react-native";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -25,6 +18,7 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
+import { encryptMessage } from "@/src/modules/conversation/utils";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -71,12 +65,19 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     if (!message.trim() || !currentUser) return;
 
     try {
+      const { encryptedContent, encryptionKey } = await encryptMessage(
+        message.trim(),
+        conversationId,
+      );
+
       await createMessage({
         conversationId,
         senderId: currentUser._id,
-        content: message.trim(),
+        content: encryptedContent,
+        encryptionKey: encryptionKey,
         type: "text",
       });
+
       setMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
