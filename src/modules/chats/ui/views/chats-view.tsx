@@ -68,13 +68,6 @@ const ChatsView = () => {
           paddingBottom: HEADER_HEIGHT,
         }}
         ListEmptyComponent={ConversationsEmpty}
-        ListHeaderComponent={() => <View className="h-px bg-secondary-100" />}
-        ItemSeparatorComponent={() => (
-          <View className="h-px bg-secondary-100 -mt-5" />
-        )}
-        ListFooterComponent={() => (
-          <View className="h-px bg-secondary-100 -mt-5" />
-        )}
       />
     </View>
   );

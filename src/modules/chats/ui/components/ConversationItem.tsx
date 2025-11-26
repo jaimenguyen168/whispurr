@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, Alert } from "react-native";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
@@ -18,6 +18,7 @@ import Reanimated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import SwipeAction from "@/src/components/SwipeAction";
+import { decryptMessage } from "@/src/modules/conversation/utils"; // Add this import
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -34,6 +35,7 @@ const ConversationItem = ({
   const heightAnim = useSharedValue(80);
   const opacityAnim = useSharedValue(1);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [decryptedLastMessage, setDecryptedLastMessage] = useState(""); // Add this state
 
   const otherParticipantId = conversation.participantIds?.find(
     (participantId) => participantId !== currentUserId,
@@ -47,6 +49,36 @@ const ConversationItem = ({
   const deleteConversation = useMutation(
     api.functions.conversations.deleteConversation,
   );
+
+  // Add useEffect to decrypt the last message
+  useEffect(() => {
+    const decryptLastMessage = async () => {
+      if (conversation.lastMessage && conversation.lastMessageEncryptionKey) {
+        try {
+          const decrypted = await decryptMessage(
+            conversation.lastMessage,
+            conversation._id,
+            conversation.lastMessageEncryptionKey,
+          );
+          setDecryptedLastMessage(decrypted);
+        } catch (error) {
+          console.error("Failed to decrypt last message:", error);
+          setDecryptedLastMessage("Unable to decrypt message");
+        }
+      } else if (conversation.lastMessage) {
+        // If there's a last message but no encryption key, assume it's unencrypted
+        setDecryptedLastMessage(conversation.lastMessage);
+      } else {
+        setDecryptedLastMessage("");
+      }
+    };
+
+    decryptLastMessage();
+  }, [
+    conversation.lastMessage,
+    conversation.lastMessageEncryptionKey,
+    conversation._id,
+  ]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -181,7 +213,7 @@ const ConversationItem = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {conversation.lastMessage || "No messages yet"}
+              {decryptedLastMessage || "No messages yet"}
             </Text>
           </View>
         </TouchableOpacity>
