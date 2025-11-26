@@ -1,5 +1,5 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import React, { useRef } from "react";
+import { View, Text, TouchableOpacity, Alert } from "react-native";
+import React, { useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
@@ -16,8 +16,8 @@ import Reanimated, {
   withTiming,
   SharedValue,
 } from "react-native-reanimated";
-import SwipeAction from "@/src/components/SwipeAction";
 import { scheduleOnRN } from "react-native-worklets";
+import SwipeAction from "@/src/components/SwipeAction";
 
 interface ConversationItemProps {
   conversation: Conversation;
@@ -33,6 +33,7 @@ const ConversationItem = ({
   const reanimatedRef = useRef<SwipeableMethods>(null);
   const heightAnim = useSharedValue(80);
   const opacityAnim = useSharedValue(1);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const otherParticipantId = conversation.participantIds?.find(
     (participantId) => participantId !== currentUserId,
@@ -54,23 +55,71 @@ const ConversationItem = ({
     };
   });
 
-  const onSwipeableOpen = () => {
-    heightAnim.value = withTiming(0, {
-      duration: 300,
-      easing: Easing.inOut(Easing.ease),
-    });
-    opacityAnim.value = withTiming(
-      0,
-      {
+  // Extracted delete logic
+  const executeDelete = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+
+    try {
+      await deleteConversation({ conversationId: conversation._id });
+      console.log("Conversation deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      heightAnim.value = withTiming(80, {
         duration: 300,
         easing: Easing.inOut(Easing.ease),
-      },
-      () => {
-        scheduleOnRN(() => {
-          deleteConversation({ conversationId: conversation._id });
-        });
-      },
+      });
+      opacityAnim.value = withTiming(1, {
+        duration: 300,
+        easing: Easing.inOut(Easing.ease),
+      });
+      setIsDeleting(false);
+      reanimatedRef.current?.close();
+    }
+  };
+
+  const showDeleteConfirmation = () => {
+    Alert.alert(
+      "Delete Conversation",
+      `Are you sure you want to delete this conversation with ${otherParticipant?.username}? This action cannot be undone.`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => {
+            // Close the swipeable when cancelled
+            reanimatedRef.current?.close();
+          },
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            // Start the delete animation
+            heightAnim.value = withTiming(0, {
+              duration: 300,
+              easing: Easing.inOut(Easing.ease),
+            });
+            opacityAnim.value = withTiming(
+              0,
+              {
+                duration: 300,
+                easing: Easing.inOut(Easing.ease),
+              },
+              (finished) => {
+                if (finished) {
+                  scheduleOnRN(executeDelete);
+                }
+              },
+            );
+          },
+        },
+      ],
     );
+  };
+
+  const onSwipeableOpen = () => {
+    showDeleteConfirmation();
   };
 
   const renderRightActions = (
@@ -83,7 +132,7 @@ const ConversationItem = ({
     );
   };
 
-  if (!otherParticipantId || !otherParticipant) {
+  if (!otherParticipantId || !otherParticipant || isDeleting) {
     return null;
   }
 
@@ -93,9 +142,9 @@ const ConversationItem = ({
         ref={reanimatedRef}
         friction={2}
         enableTrackpadTwoFingerGesture
-        rightThreshold={40}
+        rightThreshold={THRESHOLD}
         renderRightActions={renderRightActions}
-        onSwipeableWillOpen={onSwipeableOpen}
+        onSwipeableOpen={onSwipeableOpen}
       >
         <TouchableOpacity
           className="flex-row items-center py-3 px-6 bg-white"
