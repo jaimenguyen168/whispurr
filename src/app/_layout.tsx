@@ -13,10 +13,16 @@ import {
 } from "@expo-google-fonts/nunito";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { ActivityIndicator, View } from "react-native";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ThemeColors } from "@/src/constants/ThemeColors";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
+
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
 
 export default function RootLayout() {
   let [fontsLoaded] = useFonts({
@@ -34,22 +40,25 @@ export default function RootLayout() {
   }
 
   return (
-    <ConvexProvider client={convex}>
-      <GestureHandlerRootView>
-        <RootAuthLayout />
-      </GestureHandlerRootView>
-    </ConvexProvider>
+    <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      <ClerkLoaded>
+        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+          <GestureHandlerRootView>
+            <RootAuthLayout />
+          </GestureHandlerRootView>
+        </ConvexProviderWithClerk>
+      </ClerkLoaded>
+    </ClerkProvider>
   );
 }
 
 const RootAuthLayout = () => {
-  const isSignedIn = true;
-  const isLoaded = true;
+  const { isLoaded, isSignedIn } = useAuth();
 
   if (!isLoaded) {
     return (
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color={ThemeColors.primary.main} />
       </View>
     );
   }
