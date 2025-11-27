@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,16 +8,87 @@ import AppButton from "@/src/components/AppButton";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import FormField from "@/src/modules/auth/ui/components/FormField";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { validateFormData } from "@/src/utils/form-validator";
+import { useSignIn } from "@clerk/clerk-expo";
+import {
+  getClerkErrorMessage,
+  loginSchema,
+} from "@/src/modules/auth/types/authSchema";
 
 const LoginView = () => {
   const { whispurrIcon } = Icons;
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const { signIn, setActive } = useSignIn();
 
-  const handleLogin = () => {
-    // Login function to be implemented later
-    console.log("Login pressed", { email, password });
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    clearFieldError(field);
+  };
+
+  const handleLogin = async () => {
+    setIsSubmitting(true);
+    setErrors({}); // Clear previous errors
+
+    const trimmedData = {
+      ...formData,
+      email: formData.email.trim(),
+    };
+
+    const validation = validateFormData(loginSchema, trimmedData);
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      console.log("Attempting sign in with Clerk...");
+
+      const result = await signIn?.create({
+        identifier: trimmedData.email,
+        password: trimmedData.password,
+      });
+
+      console.log("SignIn result:", result);
+
+      if (result?.status === "complete") {
+        console.log("SignIn successful!");
+        await setActive!({ session: result.createdSessionId });
+      } else {
+        Alert.alert(
+          "Login Incomplete",
+          "Additional verification steps may be required. Please try again.",
+        );
+      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+
+      const errorMessage = getClerkErrorMessage(error, "email");
+
+      Alert.alert("Login Failed", errorMessage, [
+        { text: "OK", style: "default" },
+      ]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const clearFieldError = (fieldName: string) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
   };
 
   const handleRegister = () => {
@@ -79,29 +150,40 @@ const LoginView = () => {
               Log In
             </Text>
 
+            {/* General Error Message */}
+            {errors.general && (
+              <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <Text className="text-red-600 text-sm font-medium">
+                  {errors.general}
+                </Text>
+              </View>
+            )}
+
             {/* Email Field */}
             <FormField
               label="Email"
-              value={email}
-              onChangeText={setEmail}
+              value={formData.email}
+              onChangeText={(text) => updateField("email", text)}
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               required
+              error={errors.email}
             />
 
             {/* Password Field */}
             <FormField
               label="Password"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(text) => updateField("password", text)}
               placeholder="Enter your password"
               secureTextEntry={!showPassword}
               showPasswordToggle={true}
               onTogglePassword={() => setShowPassword(!showPassword)}
               autoComplete="password"
               required
+              error={errors.password}
             />
 
             <View className="flex-row items-center justify-end mb-4 -mt-4">
@@ -111,8 +193,13 @@ const LoginView = () => {
             </View>
 
             {/* Login Button */}
-            <AppButton variant="default" onPress={handleLogin} className="mb-6">
-              Log In
+            <AppButton
+              variant="default"
+              onPress={handleLogin}
+              className="mb-6"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Logging In..." : "Log In"}
             </AppButton>
 
             {/* Register Link */}

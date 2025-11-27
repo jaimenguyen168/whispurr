@@ -121,7 +121,7 @@ const ProfileView = () => {
                 {currentUser.username || "User"}
               </Text>
               <Text className="text-secondary-600 text-base">
-                @{currentUser.username?.toLowerCase() || "username"}
+                {currentUser.email}
               </Text>
             </View>
           </View>

@@ -29,14 +29,14 @@ export const ChatsHeader1 = ({
       <View className="flex-row gap-4">
         {conversations.length > 0 && (
           <Link href={"/chats/add-conversation"} asChild>
-            <TouchableOpacity className="rounded-full items-center justify-center size-11 bg-primary-100">
-              <Ionicons name="search" size={22} color="#081c15" />
+            <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
+              <Ionicons name="search" size={20} color="#081c15" />
             </TouchableOpacity>
           </Link>
         )}
         <Link href={"/chats/add-conversation"} asChild>
-          <TouchableOpacity className="rounded-full items-center justify-center size-11 bg-primary-100">
-            <Ionicons name="add" size={28} color="#081c15" />
+          <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
+            <Ionicons name="add" size={24} color="#081c15" />
           </TouchableOpacity>
         </Link>
       </View>
@@ -58,8 +58,8 @@ export const ChatsHeader2 = (
       </Link>
     </View>
     <Link href={"/chats/add-conversation"} asChild>
-      <TouchableOpacity className="rounded-full items-center justify-center size-11 bg-primary-100">
-        <Ionicons name="add" size={28} color="#081c15" />
+      <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
+        <Ionicons name="add" size={24} color="#081c15" />
       </TouchableOpacity>
     </Link>
   </View>

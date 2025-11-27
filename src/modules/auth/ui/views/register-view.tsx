@@ -1,4 +1,4 @@
-import { View, Text, Image, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity, Alert } from "react-native";
 import React, { useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -8,17 +8,93 @@ import AppButton from "@/src/components/AppButton";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import FormField from "@/src/modules/auth/ui/components/FormField";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { validateFormData } from "@/src/utils/form-validator";
+import { useSignUp } from "@clerk/clerk-expo";
+import {
+  getClerkErrorMessage,
+  signupSchema,
+} from "@/src/modules/auth/types/authSchema";
 
 const RegisterView = () => {
   const { whispurrIcon } = Icons;
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { signUp, setActive } = useSignUp();
+
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRegister = () => {
-    console.log("Register pressed", { email, password, confirmPassword });
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    clearFieldError(field);
+  };
+
+  const handleRegister = async () => {
+    setIsSubmitting(true);
+    setErrors({}); // Clear previous errors
+
+    const trimmedData = {
+      ...formData,
+      email: formData.email.trim(),
+    };
+
+    const validation = validateFormData(signupSchema, trimmedData);
+
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      console.log("Attempting sign up with Clerk...");
+
+      const result = await signUp?.create({
+        emailAddress: trimmedData.email,
+        password: trimmedData.password,
+      });
+
+      console.log("SignUp result:", result);
+
+      if (result?.status === "complete") {
+        console.log("SignUp successful!");
+        await setActive!({ session: result.createdSessionId });
+      } else {
+        Alert.alert(
+          "Registration Incomplete",
+          "Additional verification steps may be required. Please try again.",
+        );
+      }
+    } catch (error: any) {
+      console.error("Registration error:", error);
+
+      const errorMessage = getClerkErrorMessage(error, "email");
+
+      Alert.alert("Registration Failed", errorMessage, [
+        { text: "OK", style: "default" },
+      ]);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const clearFieldError = (fieldName: string) => {
+    if (errors[fieldName]) {
+      setErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
+  };
+
+  const handleLogin = () => {
+    router.push("/login");
   };
 
   return (
@@ -76,36 +152,47 @@ const RegisterView = () => {
               Create Account
             </Text>
 
+            {/* General Error Message */}
+            {errors.general && (
+              <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                <Text className="text-red-600 text-sm font-medium">
+                  {errors.general}
+                </Text>
+              </View>
+            )}
+
             {/* Email Field */}
             <FormField
               label="Email"
-              value={email}
-              onChangeText={setEmail}
+              value={formData.email}
+              onChangeText={(text) => updateField("email", text)}
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               required
+              error={errors.email}
             />
 
             {/* Password Field */}
             <FormField
               label="Password"
-              value={password}
-              onChangeText={setPassword}
+              value={formData.password}
+              onChangeText={(text) => updateField("password", text)}
               placeholder="Enter your password"
               secureTextEntry={!showPassword}
               showPasswordToggle={true}
               onTogglePassword={() => setShowPassword(!showPassword)}
               autoComplete="new-password"
               required
+              error={errors.password}
             />
 
             {/* Confirm Password Field */}
             <FormField
               label="Confirm Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              value={formData.confirmPassword}
+              onChangeText={(text) => updateField("confirmPassword", text)}
               placeholder="Confirm your password"
               secureTextEntry={!showConfirmPassword}
               showPasswordToggle={true}
@@ -114,6 +201,7 @@ const RegisterView = () => {
               }
               autoComplete="new-password"
               required
+              error={errors.confirmPassword}
             />
 
             <View className="flex-row items-center justify-end mb-4 -mt-4">
@@ -127,13 +215,14 @@ const RegisterView = () => {
               variant="default"
               onPress={handleRegister}
               className="mb-6"
+              disabled={isSubmitting}
             >
-              Create Account
+              {isSubmitting ? "Creating Account..." : "Create Account"}
             </AppButton>
 
             {/* Login Link */}
             <View className="items-center">
-              <TouchableOpacity onPress={() => router.dismiss()}>
+              <TouchableOpacity onPress={handleLogin}>
                 <Text className="text-secondary-600 font-medium">
                   Already have an account?{" "}
                   <Text className="text-primary-500 font-bold">Log In</Text>
