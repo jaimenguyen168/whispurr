@@ -26,16 +26,16 @@ export const ConversationHeader1 = ({
   const { onPin, onReport, onDelete, onCall, onVideoCall } = actions;
 
   return (
-    <View className="px-4 pb-3 flex-row justify-between items-center">
-      <View className="flex-row gap-2">
+    <View className="px-4 pb-3 flex-row justify-between items-center gap-2 w-full">
+      <View className="flex-row gap-2 flex-1 min-w-0">
         <TouchableOpacity
           onPress={onBack}
-          className="rounded-full items-center justify-center size-11 bg-transparent"
+          className="rounded-full items-center justify-center size-10 bg-transparent -ml-1"
         >
           <Ionicons name="chevron-back" size={28} color="#081c15" />
         </TouchableOpacity>
         <Link href={"/profile"} asChild>
-          <TouchableOpacity className="flex-row items-center gap-3">
+          <TouchableOpacity className="flex-row items-center gap-3 flex-1 min-w-0">
             <View className="rounded-full items-center justify-center size-12 bg-primary-100 overflow-hidden">
               {user.imageUrl ? (
                 <Image
@@ -49,8 +49,12 @@ export const ConversationHeader1 = ({
               )}
             </View>
 
-            <View>
-              <Text className="font-bold text-primary-600 text-lg">
+            <View className="flex-1 min-w-0 overflow-hidden">
+              <Text
+                className="font-bold text-primary-600 text-lg"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {user.username}
               </Text>
               <Text className="text-sm text-primary-600">Active 10m ago</Text>
@@ -59,22 +63,22 @@ export const ConversationHeader1 = ({
         </Link>
       </View>
 
-      <View className="flex-row gap-4">
+      <View className="flex-row gap-3 flex-shrink-0">
         <TouchableOpacity
           onPress={onCall || (() => console.log("Start voice call"))}
-          className="rounded-full items-center justify-center size-11 bg-primary-100"
+          className="rounded-full items-center justify-center size-10 bg-primary-100"
         >
           <Ionicons name="call-outline" size={20} color="#081c15" />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={onVideoCall || (() => console.log("Start video call"))}
-          className="rounded-full items-center justify-center size-11 bg-primary-100"
+          className="rounded-full items-center justify-center size-10 bg-primary-100"
         >
           <Ionicons name="videocam-outline" size={22} color="#081c15" />
         </TouchableOpacity>
 
-        <View className="rounded-full items-center justify-center size-11 bg-primary-100">
+        <View className="rounded-full items-center justify-center size-10 bg-primary-100">
           <Host matchContents>
             <ContextMenu>
               <ContextMenu.Items>
@@ -100,7 +104,7 @@ export const ConversationHeader1 = ({
                 </Button>
               </ContextMenu.Items>
               <ContextMenu.Trigger>
-                <View className="rounded-full items-center justify-center size-11 bg-primary-100">
+                <View className="rounded-full items-center justify-center size-10 bg-primary-100">
                   <Ionicons
                     name="ellipsis-horizontal-outline"
                     size={24}
@@ -131,7 +135,7 @@ export const ConversationHeader2 = ({
     <View className="px-4 pb-3 flex-row justify-between items-center">
       <TouchableOpacity
         onPress={onBack}
-        className="rounded-full items-center justify-center size-11 bg-transparent"
+        className="rounded-full items-center justify-center size-10 bg-transparent -ml-1"
       >
         <Ionicons name="chevron-back" size={28} color="#081c15" />
       </TouchableOpacity>
@@ -142,7 +146,7 @@ export const ConversationHeader2 = ({
         <Text className="text-sm text-primary-600">Active 10m ago</Text>
       </View>
 
-      <View className="rounded-full items-center justify-center size-11 bg-primary-100 pb-2">
+      <View className="rounded-full items-center justify-center size-10 bg-primary-100 pb-2">
         <Host matchContents>
           <ContextMenu>
             <ContextMenu.Items>

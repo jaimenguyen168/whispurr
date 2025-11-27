@@ -8,6 +8,7 @@ export default function TabsLayout() {
       blurEffect="prominent"
       tintColor={ThemeColors.primary.base}
       minimizeBehavior="onScrollDown"
+      rippleColor={ThemeColors.primary.light}
     >
       <NativeTabs.Trigger name="chats">
         <Label>Chats</Label>

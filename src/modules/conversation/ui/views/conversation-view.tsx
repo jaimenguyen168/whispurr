@@ -1,4 +1,11 @@
-import { View, Text, ActivityIndicator, Alert } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -187,32 +194,38 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         }
       />
 
-      <View className="flex-1">
-        <Animated.FlatList
-          data={messages || []}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingTop: HEADER_HEIGHT + insets.top + 16,
-            gap: 12,
-            justifyContent: "flex-end",
-            paddingBottom: 16,
-          }}
-          ListEmptyComponent={renderEmptyState}
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <View className="flex-1">
+          <Animated.FlatList
+            data={messages || []}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item._id}
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingTop: HEADER_HEIGHT + insets.top + 16,
+              gap: 12,
+              justifyContent: "flex-end",
+              paddingBottom: 16,
+            }}
+            ListEmptyComponent={renderEmptyState}
+            onScroll={scrollHandler}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
 
-      <MessageInput
-        message={message}
-        onMessageChange={setMessage}
-        onSendMessage={sendMessage}
-        onAddAttachment={() => console.log("Add attachment")}
-        disabled={isDeleting}
-      />
+        <MessageInput
+          message={message}
+          onMessageChange={setMessage}
+          onSendMessage={sendMessage}
+          onAddAttachment={() => console.log("Add attachment")}
+          disabled={isDeleting}
+        />
+      </KeyboardAvoidingView>
     </View>
   );
 };

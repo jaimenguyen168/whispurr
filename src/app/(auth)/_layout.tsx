@@ -1,10 +1,35 @@
-import { View, Text } from "react-native";
 import React from "react";
+import { Stack } from "@/src/components/Stack";
+import { ThemeColors } from "@/src/constants/ThemeColors";
 
 export default function AuthLayout() {
   return (
-    <View>
-      <Text>AuthLayout</Text>
-    </View>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="login"
+        options={{
+          presentation: "formSheet",
+          sheetAllowedDetents: [1.0],
+          headerShadowVisible: false,
+          sheetGrabberVisible: false,
+          contentStyle: {
+            backgroundColor: ThemeColors.secondary.lightest,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="register"
+        options={{
+          presentation: "formSheet",
+          sheetAllowedDetents: [1.0],
+          headerShadowVisible: false,
+          sheetGrabberVisible: false,
+          contentStyle: {
+            backgroundColor: ThemeColors.secondary.lightest,
+          },
+        }}
+      />
+    </Stack>
   );
 }
