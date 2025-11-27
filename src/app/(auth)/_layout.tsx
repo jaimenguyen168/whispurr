@@ -12,7 +12,19 @@ export default function AuthLayout() {
           presentation: "formSheet",
           sheetAllowedDetents: [1.0],
           headerShadowVisible: false,
-          sheetGrabberVisible: true,
+          sheetGrabberVisible: false,
+          contentStyle: {
+            backgroundColor: ThemeColors.secondary.lightest,
+          },
+        }}
+      />
+      <Stack.Screen
+        name="register"
+        options={{
+          presentation: "formSheet",
+          sheetAllowedDetents: [1.0],
+          headerShadowVisible: false,
+          sheetGrabberVisible: false,
           contentStyle: {
             backgroundColor: ThemeColors.secondary.lightest,
           },

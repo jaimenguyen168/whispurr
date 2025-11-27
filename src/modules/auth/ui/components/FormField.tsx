@@ -28,8 +28,8 @@ const FormField = ({
   showPasswordToggle = false,
   onTogglePassword,
   containerClassName = "mb-6",
-  inputClassName = "bg-card border border-soft rounded-2xl px-4 py-4 text-base text-main",
-  labelClassName = "text-secondary font-medium mb-2",
+  inputClassName = "bg-transparent border border-secondary-400 rounded-2xl p-4",
+  labelClassName = "text-secondary-600 font-semibold mb-2",
   ...props
 }: FormFieldProps) => {
   const hasPasswordToggle = showPasswordToggle && onTogglePassword;

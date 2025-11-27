@@ -1,10 +1,6 @@
-import { View, Text } from "react-native";
 import React from "react";
+import LoginView from "@/src/modules/auth/ui/views/login-view";
 
 export default function LoginScreen() {
-  return (
-    <View>
-      <Text>LoginScreen</Text>
-    </View>
-  );
+  return <LoginView />;
 }

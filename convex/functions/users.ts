@@ -1,26 +1,18 @@
 import { query } from "../_generated/server";
 import { v } from "convex/values";
+import { getAuthenticatedUser } from "../utils";
 
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const externalId = "12345678";
-
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_external_id", (q) => q.eq("externalId", externalId))
-      .first();
-
-    if (!user) {
-      throw new Error(`User with external ID ${externalId} not found`);
-    }
-
-    return user;
+    return await getAuthenticatedUser(ctx);
   },
 });
 
 export const getUserById = query({
-  args: { userId: v.id("users") },
+  args: {
+    userId: v.id("users"),
+  },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
 
@@ -35,10 +27,11 @@ export const getUserById = query({
 export const getUsers = query({
   args: {},
   handler: async (ctx) => {
+    const currentUser = await getAuthenticatedUser(ctx);
+
     return await ctx.db
       .query("users")
-      .withIndex("by_external_id")
-      .filter((q) => q.neq(q.field("externalId"), "12345678"))
+      .filter((q) => q.neq(q.field("_id"), currentUser._id))
       .collect();
   },
 });
@@ -46,46 +39,25 @@ export const getUsers = query({
 export const getOtherUserByConversationId = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    const externalId = "12345678";
+    const currentUser = await getAuthenticatedUser(ctx);
 
-    // Get the current user
-    const currentUser = await ctx.db
-      .query("users")
-      .withIndex("by_external_id", (q) => q.eq("externalId", externalId))
-      .first();
-
-    if (!currentUser) {
-      throw new Error("Current user not found");
-    }
-
-    // Get the conversation
     const conversation = await ctx.db.get(args.conversationId);
-
     if (!conversation) {
-      throw new Error(`Conversation with ID ${args.conversationId} not found`);
+      throw new Error("Conversation not found");
     }
 
-    // Check if the current user is part of the conversation
     if (!conversation.participantIds.includes(currentUser._id)) {
       throw new Error("User is not a participant in this conversation");
     }
 
-    // Find the other user's ID (filter out current user's ID)
     const otherUserId = conversation.participantIds.find(
-      (participantId) => participantId !== currentUser._id,
+      (id) => id !== currentUser._id,
     );
 
     if (!otherUserId) {
       throw new Error("No other user found in this conversation");
     }
 
-    // Get the other user's details
-    const otherUser = await ctx.db.get(otherUserId);
-
-    if (!otherUser) {
-      throw new Error("Other user not found");
-    }
-
-    return otherUser;
+    return await ctx.db.get(otherUserId);
   },
 });

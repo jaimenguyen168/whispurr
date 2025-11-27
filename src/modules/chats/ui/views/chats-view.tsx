@@ -29,18 +29,19 @@ const ChatsView = () => {
     },
   });
 
-  const currentUserId = "j57aaja4jbfafbpjhqj8ba36kh7w0nxg";
+  const currentUser = useQuery(api.functions.users.getCurrentUser);
+
   const conversations = useQuery(
     api.functions.conversations.getConversationsForUser,
   );
 
-  if (!conversations) {
+  if (!conversations || !currentUser) {
     return <ConversationsLoading />;
   }
 
   const renderConversationItem = ({ item }: { item: Conversation }) => {
     return (
-      <ConversationItem conversation={item} currentUserId={currentUserId} />
+      <ConversationItem conversation={item} currentUserId={currentUser._id} />
     );
   };
 
