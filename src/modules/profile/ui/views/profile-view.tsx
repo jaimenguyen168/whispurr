@@ -1,4 +1,4 @@
-import { View, Text, Image, Alert } from "react-native";
+import { View, Text, Image, Alert, TouchableOpacity } from "react-native";
 import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -11,6 +11,11 @@ import Animated, {
 import { ChatsHeader2 } from "@/src/modules/chats/ui/components/ChatsHeaders";
 import AnimatedHeader from "@/src/components/AnimatedHeader";
 import { useAuth } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  ProfileHeader1,
+  ProfileHeader2,
+} from "@/src/modules/profile/ui/components/ProfileHeaders";
 
 const ProfileView = () => {
   const { signOut } = useAuth();
@@ -25,7 +30,7 @@ const ProfileView = () => {
   const currentUser = useQuery(api.functions.users.getCurrentUser);
 
   const handleEditProfile = () => {
-    router.push("/");
+    router.push("/profile/edit-profile");
   };
 
   const handleCommunities = () => {
@@ -84,8 +89,8 @@ const ProfileView = () => {
       <AnimatedHeader
         scrollThreshold={50}
         scrollOffset={scrollOffset}
-        header1={<View className="h-[50px]" />}
-        header2={ChatsHeader2}
+        header1={ProfileHeader1}
+        header2={<ProfileHeader2 user={currentUser} />}
       />
       <Animated.ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -96,7 +101,10 @@ const ProfileView = () => {
         }}
       >
         {/* User Profile Header */}
-        <View className="bg-white py-4 mb-4">
+        <TouchableOpacity
+          onPress={handleEditProfile}
+          className="bg-white py-4 mb-4 flex-row items-center justify-between pr-8"
+        >
           <View className="flex-row items-center">
             {/* Profile Image */}
             <View className="mr-4">
@@ -125,26 +133,21 @@ const ProfileView = () => {
               </Text>
             </View>
           </View>
-        </View>
+
+          <Ionicons name="create-outline" size={24} color="black" />
+        </TouchableOpacity>
 
         {/* Settings Sections */}
         <View className="mb-4">
           <SettingsItem
-            icon="create-outline"
-            title="Edit Profile"
-            onPress={handleEditProfile}
-            showBadge={true}
-            badgeText="2"
+            icon="people-outline"
+            title="Friends"
+            onPress={handleFriends}
           />
           <SettingsItem
             icon="globe-outline"
             title="Communities"
             onPress={handleCommunities}
-          />
-          <SettingsItem
-            icon="people-outline"
-            title="Friends"
-            onPress={handleFriends}
           />
         </View>
 

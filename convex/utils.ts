@@ -26,3 +26,22 @@ export const getAuthenticatedUser = async (ctx: any) => {
 
   return user;
 };
+
+export const getImageUrl = async (ctx: any, imageField: string | undefined) => {
+  if (!imageField) return undefined;
+
+  if (imageField.startsWith("https://") || imageField.startsWith("http://")) {
+    return imageField;
+  }
+
+  if (!imageField.startsWith("http")) {
+    try {
+      return await ctx.storage.getUrl(imageField);
+    } catch (error) {
+      console.error("Error getting Convex storage URL:", error);
+      return undefined;
+    }
+  }
+
+  return imageField;
+};
