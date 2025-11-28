@@ -13,8 +13,10 @@ import { api } from "@/convex/_generated/api";
 import { User } from "@/src/types/convex";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import { Image } from "expo-image";
+import { useThemeColors } from "@/src/providers/ThemeProvider";
 
 const AddConversationView = () => {
+  const colors = useThemeColors();
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<TextInput>(null);
 
@@ -58,7 +60,7 @@ const AddConversationView = () => {
 
   const renderUserItem = ({ item }: { item: User }) => (
     <TouchableOpacity
-      className="flex-row items-center mx-4 py-3 border-b border-gray-100"
+      className="flex-row items-center mx-4 py-3 border-b border-soft"
       activeOpacity={0.7}
       onPress={() => handleUserPress(item)}
     >
@@ -76,13 +78,13 @@ const AddConversationView = () => {
       </View>
 
       <View className="flex-1">
-        <Text className="font-semibold text-base text-gray-900">
+        <Text className="font-semibold text-base text-main">
           {item.username}
         </Text>
-        <Text className="text-sm text-gray-500 mt-0.5">{item.email}</Text>
+        <Text className="text-sm text-secondary mt-0.5">{item.email}</Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+      <Ionicons name="chevron-forward" size={20} color={colors.muted} />
     </TouchableOpacity>
   );
 
@@ -98,33 +100,29 @@ const AddConversationView = () => {
   );
 
   return (
-    <View className="flex-1 bg-white p-3">
+    <View className="flex-1 bg-app p-3">
       {/* Header */}
       <View className="px-3 py-3 flex-row justify-between items-center">
         <View className="size-8" />
-        <Text className="font-bold text-xl text-gray-900">New Chat</Text>
+        <Text className="font-bold text-xl text-main">New Chat</Text>
         <TouchableOpacity
           onPress={() => router.dismiss()}
-          className="rounded-full items-center justify-center size-8 bg-primary-100"
+          className="rounded-full items-center justify-center size-8 bg-surface"
           activeOpacity={0.7}
         >
-          <Ionicons name="close" size={20} color={ThemeColors.primary.darker} />
+          <Ionicons name="close" size={20} color={colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Search Input */}
       <View className="px-3 py-3">
-        <View className="flex-row items-center bg-gray-100 rounded-xl px-4 h-10">
-          <Ionicons
-            name="search"
-            size={20}
-            color={ThemeColors.secondary.main}
-          />
+        <View className="flex-row items-center bg-card rounded-xl px-4 h-10">
+          <Ionicons name="search" size={20} color={colors.icon} />
           <TextInput
             ref={searchInputRef}
-            className="flex-1 ml-3 text-gray-900"
+            className="flex-1 ml-3 text-secondary"
             placeholder="Search by username or email"
-            placeholderTextColor={ThemeColors.secondary.base}
+            placeholderTextColor={colors.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -155,7 +153,7 @@ const AddConversationView = () => {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
         contentContainerStyle={{
-          flexGrow: 1,
+          flex: 1,
           paddingBottom: 100,
         }}
       />

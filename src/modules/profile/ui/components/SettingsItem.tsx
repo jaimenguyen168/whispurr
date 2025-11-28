@@ -2,57 +2,55 @@ import { View, Text, TouchableOpacity } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
+import { useThemeColors } from "@/src/providers/ThemeProvider";
 
 interface SettingsItemProps {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
-  onPress: () => void;
-  showBadge?: boolean;
-  badgeText?: string;
+  onPress?: () => void;
   showChevron?: boolean;
   iconColor?: string;
+  showBorder?: boolean;
+  rightComponent?: React.ReactNode;
 }
 
 const SettingsItem = ({
   icon,
   title,
   onPress,
-  showBadge = false,
-  badgeText,
   showChevron = true,
   iconColor = ThemeColors.secondary.main,
+  showBorder = true,
+  rightComponent,
 }: SettingsItemProps) => {
+  const colors = useThemeColors();
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="flex-row items-center py-4 bg-transparent border-b border-secondary-100/80"
+      className={`flex-row items-center py-4 bg-card px-4 ${showBorder ? "border-b border-soft" : ""}`}
       activeOpacity={0.7}
     >
       {/* Icon */}
       <View className="mr-4">
-        <Ionicons name={icon} size={24} color={iconColor} />
+        <Ionicons
+          name={icon}
+          size={24}
+          color={iconColor || colors.tabIconSelected}
+        />
       </View>
 
       {/* Title */}
-      <Text className="flex-1 text-base font-medium text-secondary-800">
+      <Text className="flex-1 text-base font-medium text-secondary">
         {title}
       </Text>
 
-      {/* Badge */}
-      {showBadge && badgeText && (
-        <View className="bg-red-500 rounded-full min-w-[24px] h-6 items-center justify-center mr-3">
-          <Text className="text-white text-xs font-bold px-1">{badgeText}</Text>
-        </View>
-      )}
-
-      {/* Chevron */}
-      {showChevron && (
-        <Ionicons
-          name="chevron-forward"
-          size={20}
-          color={ThemeColors.secondary.medium}
-        />
-      )}
+      {/* Right Component or Chevron */}
+      {rightComponent ? (
+        rightComponent
+      ) : showChevron ? (
+        <Ionicons name="chevron-forward" size={20} color={colors.muted} />
+      ) : null}
     </TouchableOpacity>
   );
 };

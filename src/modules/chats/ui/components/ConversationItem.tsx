@@ -179,7 +179,7 @@ const ConversationItem = ({
         onSwipeableOpen={onSwipeableOpen}
       >
         <TouchableOpacity
-          className="flex-row items-center py-3 px-6 bg-white"
+          className="flex-row items-center py-3 px-6 bg-transparent"
           activeOpacity={0.7}
           onPress={() => router.push(`/(chat)/${conversation._id}`)}
         >
@@ -200,16 +200,16 @@ const ConversationItem = ({
           {/* Content */}
           <View className="flex-1">
             <View className="flex-row justify-between items-center mb-1">
-              <Text className="font-bold text-base text-primary-800">
+              <Text className="font-bold text-base text-main">
                 {otherParticipant.username}
               </Text>
-              <Text className="text-xs text-secondary-400">
+              <Text className="text-xs text-muted">
                 {formatTime(conversation.lastMessageAt)}
               </Text>
             </View>
 
             <Text
-              className="text-sm text-secondary-500"
+              className="text-sm text-secondary"
               numberOfLines={1}
               ellipsizeMode="tail"
             >

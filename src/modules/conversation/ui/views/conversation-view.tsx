@@ -140,7 +140,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   if (!conversation || !otherUser || !currentUser) {
     return (
       <View className="flex-1 items-center justify-center">
-        <Text className="text-gray-500">Loading...</Text>
+        <Text className="text-main">Loading...</Text>
       </View>
     );
   }
@@ -156,10 +156,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         size={64}
         color={ThemeColors.secondary.medium || "#9CA3AF"}
       />
-      <Text className="text-gray-500 text-center text-lg font-medium mt-4 mb-2">
+      <Text className="text-main text-center text-lg font-medium mt-4 mb-2">
         Start the conversation
       </Text>
-      <Text className="text-gray-400 text-center">
+      <Text className="text-secondary text-center">
         Send the first message to {otherUser.username}
       </Text>
     </View>
@@ -199,7 +199,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         className="flex-1"
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <View className="flex-1">
+        <View className="flex-1 bg-app">
           <Animated.FlatList
             data={messages || []}
             renderItem={renderMessage}

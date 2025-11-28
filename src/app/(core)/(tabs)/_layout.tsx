@@ -40,16 +40,16 @@ export default function TabsLayout() {
           drawable="profile_drawable"
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="more">
-        <Label>More</Label>
-        <Icon
-          sf={{
-            default: "line.3.horizontal.circle",
-            selected: "line.3.horizontal.circle.fill",
-          }}
-          drawable="more_drawable"
-        />
-      </NativeTabs.Trigger>
+      {/*<NativeTabs.Trigger name="more">*/}
+      {/*  <Label>More</Label>*/}
+      {/*  <Icon*/}
+      {/*    sf={{*/}
+      {/*      default: "line.3.horizontal.circle",*/}
+      {/*      selected: "line.3.horizontal.circle.fill",*/}
+      {/*    }}*/}
+      {/*    drawable="more_drawable"*/}
+      {/*  />*/}
+      {/*</NativeTabs.Trigger>*/}
     </NativeTabs>
   );
 }

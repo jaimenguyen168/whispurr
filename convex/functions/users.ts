@@ -1,11 +1,18 @@
-import { query } from "../_generated/server";
+import { mutation, query } from "../_generated/server";
 import { v } from "convex/values";
-import { getAuthenticatedUser } from "../utils";
+import { getAuthenticatedUser, getImageUrl } from "../utils";
 
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    return await getAuthenticatedUser(ctx);
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    const imageUrl = await getImageUrl(ctx, currentUser.imageUrl);
+
+    return {
+      ...currentUser,
+      imageUrl,
+    };
   },
 });
 
@@ -20,7 +27,12 @@ export const getUserById = query({
       throw new Error(`User with ID ${args.userId} not found`);
     }
 
-    return user;
+    const imageUrl = await getImageUrl(ctx, user.imageUrl);
+
+    return {
+      ...user,
+      imageUrl,
+    };
   },
 });
 
@@ -29,10 +41,20 @@ export const getUsers = query({
   handler: async (ctx) => {
     const currentUser = await getAuthenticatedUser(ctx);
 
-    return await ctx.db
+    const users = await ctx.db
       .query("users")
       .filter((q) => q.neq(q.field("_id"), currentUser._id))
       .collect();
+
+    return await Promise.all(
+      users.map(async (user) => {
+        const imageUrl = await getImageUrl(ctx, user.imageUrl);
+        return {
+          ...user,
+          imageUrl,
+        };
+      }),
+    );
   },
 });
 
@@ -58,6 +80,58 @@ export const getOtherUserByConversationId = query({
       throw new Error("No other user found in this conversation");
     }
 
-    return await ctx.db.get(otherUserId);
+    const otherUser = await ctx.db.get(otherUserId);
+    if (!otherUser) {
+      throw new Error("Other user not found");
+    }
+
+    const imageUrl = await getImageUrl(ctx, otherUser.imageUrl);
+
+    return {
+      ...otherUser,
+      imageUrl,
+    };
+  },
+});
+
+export const updateUserProfile = mutation({
+  args: {
+    username: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const updateData: {
+      username?: string;
+      imageUrl?: string;
+    } = {};
+
+    if (args.username !== undefined) {
+      // Check if username is already taken by another user
+      const existingUser = await ctx.db
+        .query("users")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("username"), args.username),
+            q.neq(q.field("_id"), user._id),
+          ),
+        )
+        .first();
+
+      if (existingUser) {
+        throw new Error("Username is already taken");
+      }
+
+      updateData.username = args.username;
+    }
+
+    if (args.imageUrl !== undefined) {
+      updateData.imageUrl = args.imageUrl;
+    }
+
+    await ctx.db.patch(user._id, updateData);
+
+    return { success: true };
   },
 });

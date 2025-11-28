@@ -28,7 +28,7 @@ export const ThemeColors = {
     darkest: "#212529", // 800
   },
 
-  // Theme-specific colors (keeping your existing structure)
+  // Theme-specific colors
   light: {
     text: "#212529", // secondary-800
     background: "#f8f9fa", // secondary-50
@@ -36,8 +36,6 @@ export const ThemeColors = {
     icon: "#6c757d", // secondary-500
     tabIconDefault: "#6c757d", // secondary-500
     tabIconSelected: tintColorLight, // primary-500
-
-    // Additional semantic colors
     surface: "#fff", // Pure white for cards
     border: "#dee2e6", // secondary-200
     muted: "#adb5bd", // secondary-400
@@ -47,11 +45,17 @@ export const ThemeColors = {
   },
 
   dark: {
-    text: "",
-    background: "",
-    tint: "",
-    icon: "",
-    tabIconDefault: "",
-    tabIconSelected: "",
+    text: "#f8f9fa", // Light text on dark background
+    background: "#212529", // Dark background
+    tint: tintColorDark, // primary-300
+    icon: "#adb5bd", // Lighter icon color
+    tabIconDefault: "#adb5bd", // secondary-400
+    tabIconSelected: tintColorDark, // primary-300
+    surface: "#343a40", // Dark surface for cards
+    border: "#495057", // Dark border
+    muted: "#6c757d", // Muted text
+    accent: "#74c69d", // primary-300
+    success: "#52b788", // primary-400
+    textSecondary: "#ced4da", // Light secondary text
   },
 };

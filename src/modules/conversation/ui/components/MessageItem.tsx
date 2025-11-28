@@ -76,7 +76,7 @@ const MessageItem = ({ message, otherUser }: MessageItemProps) => {
     >
       {isFromOtherUser && (
         <Link href={"/profile"} asChild>
-          <TouchableOpacity className="rounded-full items-center justify-center size-8 bg-primary-100 overflow-hidden mt-auto mb-1">
+          <TouchableOpacity className="rounded-full items-center justify-center size-8 bg-accent overflow-hidden mt-auto mb-1">
             {otherUser?.imageUrl ? (
               <Image
                 source={otherUser.imageUrl}
@@ -93,13 +93,15 @@ const MessageItem = ({ message, otherUser }: MessageItemProps) => {
       <View
         className={`rounded-2xl px-4 py-2.5 ${
           isFromOtherUser
-            ? "bg-secondary-200 rounded-bl-sm"
-            : "bg-primary-500 rounded-br-sm"
+            ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-sm"
+            : "bg-accent rounded-br-sm"
         }`}
       >
         <Text
           className={`text-base leading-5 font-semibold ${
-            isFromOtherUser ? "text-secondary-800" : "text-white"
+            isFromOtherUser
+              ? "text-secondary-800 dark:text-secondary-50"
+              : "text-white"
           }`}
         >
           {decryptedContent}
@@ -112,7 +114,7 @@ const MessageItem = ({ message, otherUser }: MessageItemProps) => {
         >
           <Text
             className={`text-xs font-light ${
-              isFromOtherUser ? "text-gray-500" : "text-secondary-50"
+              isFromOtherUser ? "text-secondary-200" : "text-secondary-50"
             }`}
           >
             {formatTime(message._creationTime, "time")}
