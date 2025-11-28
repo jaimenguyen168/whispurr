@@ -10,6 +10,7 @@ interface SettingsItemProps {
   onPress?: () => void;
   showChevron?: boolean;
   iconColor?: string;
+  showBorder?: boolean;
   rightComponent?: React.ReactNode;
 }
 
@@ -19,6 +20,7 @@ const SettingsItem = ({
   onPress,
   showChevron = true,
   iconColor = ThemeColors.secondary.main,
+  showBorder = true,
   rightComponent,
 }: SettingsItemProps) => {
   const colors = useThemeColors();
@@ -26,7 +28,7 @@ const SettingsItem = ({
   return (
     <TouchableOpacity
       onPress={onPress}
-      className="flex-row items-center py-4 border-b bg-card border-soft px-4"
+      className={`flex-row items-center py-4 bg-card px-4 ${showBorder ? "border-b border-soft" : ""}`}
       activeOpacity={0.7}
     >
       {/* Icon */}

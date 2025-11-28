@@ -54,7 +54,7 @@ const ChatsView = () => {
         scrollThreshold={HEADER_HEIGHT}
         scrollOffset={scrollOffset}
         header1={ChatsHeader1({ conversations })}
-        header2={ChatsHeader2}
+        header2={<ChatsHeader2 />}
       />
       <Animated.FlatList
         data={conversations}

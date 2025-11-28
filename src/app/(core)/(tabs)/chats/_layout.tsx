@@ -1,13 +1,16 @@
 import React from "react";
 import { Stack } from "@/src/components/Stack";
+import { useThemeColors } from "@/src/providers/ThemeProvider";
 
 export default function ChatsLayout() {
+  const colors = useThemeColors();
+
   return (
     <Stack
       screenOptions={{
         headerShown: false,
         contentStyle: {
-          backgroundColor: "#fff",
+          backgroundColor: colors.background,
         },
       }}
     >
@@ -19,7 +22,7 @@ export default function ChatsLayout() {
           headerShadowVisible: false,
           sheetGrabberVisible: true,
           contentStyle: {
-            backgroundColor: "#fff",
+            backgroundColor: colors.background,
           },
         }}
       />

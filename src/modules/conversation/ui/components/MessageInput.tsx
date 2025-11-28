@@ -2,6 +2,7 @@ import { View, TextInput, TouchableOpacity } from "react-native";
 import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
+import { useThemeColors } from "@/src/providers/ThemeProvider";
 
 interface MessageInputProps {
   message: string;
@@ -20,15 +21,16 @@ const MessageInput = ({
   placeholder = "Type a message",
   disabled = false,
 }: MessageInputProps) => {
+  const colors = useThemeColors();
   return (
-    <View className="bg-white pb-8 px-6 pt-4">
+    <View className="bg-card pb-8 px-6 pt-4">
       <View className="flex-row items-end gap-2 justify-between">
         <TouchableOpacity
           className="rounded-full items-center justify-center size-10"
           onPress={onAddAttachment}
           disabled={disabled}
         >
-          <Ionicons name="add" size={32} color={ThemeColors.primary.main} />
+          <Ionicons name="add" size={32} color={colors.text} />
         </TouchableOpacity>
 
         <TextInput
@@ -37,8 +39,8 @@ const MessageInput = ({
           autoCorrect={false}
           autoCapitalize="none"
           placeholder={placeholder}
-          className="flex-1 rounded-2xl bg-secondary-50 p-4"
-          placeholderTextColor={ThemeColors.secondary.base}
+          className="flex-1 rounded-2xl bg-surface p-4 text-secondary"
+          placeholderTextColor={colors.muted}
           multiline
           numberOfLines={5}
           editable={!disabled}
@@ -50,11 +52,13 @@ const MessageInput = ({
           disabled={disabled || !message.trim()}
         >
           <Ionicons
-            name="paper-plane-outline"
-            size={28}
-            color={
-              disabled || !message.trim() ? "#9CA3AF" : ThemeColors.primary.main
+            name={
+              disabled || !message.trim()
+                ? "paper-plane-outline"
+                : "paper-plane"
             }
+            size={28}
+            color={disabled || !message.trim() ? colors.muted : colors.accent}
           />
         </TouchableOpacity>
       </View>

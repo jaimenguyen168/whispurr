@@ -15,15 +15,11 @@ import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
 } from "react-native-reanimated";
-import AnimatedHeader from "@/src/components/AnimatedHeader";
 import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  ProfileHeader1,
-  ProfileHeader2,
-} from "@/src/modules/profile/ui/components/ProfileHeaders";
 import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
 import { ThemeColors } from "@/src/constants/ThemeColors";
+import BlurNavigationHeader from "@/src/components/BlurNavigationHeader";
 
 const SCROLL_THRESHOLD = 56;
 
@@ -94,11 +90,10 @@ const ProfileView = () => {
 
   return (
     <View className="flex-1">
-      <AnimatedHeader
-        scrollThreshold={SCROLL_THRESHOLD}
-        scrollOffset={scrollOffset}
-        header1={ProfileHeader1}
-        header2={<ProfileHeader2 user={currentUser} />}
+      <BlurNavigationHeader
+        title="Profile"
+        statusBarStyle={isDark ? "light" : "dark"}
+        blurType={isDark ? "dark" : "light"}
       />
       <Animated.ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -161,6 +156,7 @@ const ProfileView = () => {
             icon="globe-outline"
             title="Communities"
             onPress={handleCommunities}
+            showBorder={false}
           />
         </View>
 
@@ -196,6 +192,7 @@ const ProfileView = () => {
               icon="volume-medium-outline"
               title="Sounds"
               onPress={handleSounds}
+              showBorder={false}
             />
           </View>
         </View>
@@ -222,6 +219,7 @@ const ProfileView = () => {
               onPress={handleLogOut}
               showChevron={true}
               iconColor="#ef4444"
+              showBorder={false}
             />
           </View>
         </View>

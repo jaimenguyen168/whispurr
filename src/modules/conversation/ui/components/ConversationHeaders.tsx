@@ -5,6 +5,9 @@ import { User } from "@/src/types/convex";
 import { Image } from "expo-image";
 import React from "react";
 import { Button, ContextMenu, Host } from "@expo/ui/swift-ui";
+import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
 
 interface ConversationHeaderActions {
   onPin?: () => void;
@@ -23,6 +26,7 @@ export const ConversationHeader1 = ({
   onBack?: () => void;
   actions?: ConversationHeaderActions;
 }) => {
+  const colors = useThemeColors();
   const { onPin, onReport, onDelete, onCall, onVideoCall } = actions;
 
   return (
@@ -32,7 +36,7 @@ export const ConversationHeader1 = ({
           onPress={onBack}
           className="rounded-full items-center justify-center size-10 bg-transparent -ml-1"
         >
-          <Ionicons name="chevron-back" size={28} color="#081c15" />
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <Link href={"/profile"} asChild>
           <TouchableOpacity className="flex-row items-center gap-3 flex-1 min-w-0">
@@ -51,13 +55,13 @@ export const ConversationHeader1 = ({
 
             <View className="flex-1 min-w-0 overflow-hidden">
               <Text
-                className="font-bold text-primary-600 text-lg"
+                className="font-bold text-accent text-lg"
                 numberOfLines={1}
                 ellipsizeMode="tail"
               >
                 {user.username}
               </Text>
-              <Text className="text-sm text-primary-600">Active 10m ago</Text>
+              <Text className="text-sm text-muted">Active 10m ago</Text>
             </View>
           </TouchableOpacity>
         </Link>
@@ -129,68 +133,79 @@ export const ConversationHeader2 = ({
   onBack?: () => void;
   actions?: ConversationHeaderActions;
 }) => {
+  const colors = useThemeColors();
+  const insets = useSafeAreaInsets();
+  const { isDark } = useTheme();
   const { onPin, onReport, onDelete, onCall, onVideoCall } = actions;
 
   return (
-    <View className="px-4 pb-3 flex-row justify-between items-center">
-      <TouchableOpacity
-        onPress={onBack}
-        className="rounded-full items-center justify-center size-10 bg-transparent -ml-1"
-      >
-        <Ionicons name="chevron-back" size={28} color="#081c15" />
-      </TouchableOpacity>
-      <View className="flex-1 items-center">
-        <Text className="font-bold text-primary-600 text-lg">
-          {user.username}
-        </Text>
-        <Text className="text-sm text-primary-600">Active 10m ago</Text>
-      </View>
+    <BlurView
+      intensity={80}
+      tint={isDark ? "dark" : "light"}
+      style={{ paddingTop: insets.top }}
+    >
+      <View className="px-4 pb-3 flex-row justify-between items-center">
+        <TouchableOpacity
+          onPress={onBack}
+          className="rounded-full items-center justify-center size-10 bg-transparent -ml-1"
+        >
+          <Ionicons name="chevron-back" size={28} color={colors.text} />
+        </TouchableOpacity>
+        <View className="flex-1 items-center">
+          <Text className="font-bold text-accent text-lg">{user.username}</Text>
+          <Text className="text-sm text-muted">Active 10m ago</Text>
+        </View>
 
-      <View className="rounded-full items-center justify-center size-10 bg-primary-100 pb-2">
-        <Host matchContents>
-          <ContextMenu>
-            <ContextMenu.Items>
-              <Button
-                systemImage="phone.fill"
-                onPress={onCall || (() => console.log("Start voice call"))}
-              >
-                Voice call
-              </Button>
-              <Button
-                systemImage="video.fill"
-                onPress={onVideoCall || (() => console.log("Start video call"))}
-              >
-                Video call
-              </Button>
-              <Button
-                systemImage="pin.fill"
-                onPress={onPin || (() => console.log("Pin conversation"))}
-              >
-                Pin conversation
-              </Button>
-              <Button
-                systemImage="flag.fill"
-                onPress={onReport || (() => console.log("Report user"))}
-              >
-                Report user
-              </Button>
-              <Button
-                systemImage="trash.fill"
-                onPress={onDelete || (() => console.log("Delete conversation"))}
-              >
-                Delete conversation
-              </Button>
-            </ContextMenu.Items>
-            <ContextMenu.Trigger>
-              <Ionicons
-                name="ellipsis-horizontal-outline"
-                size={24}
-                color="#081c15"
-              />
-            </ContextMenu.Trigger>
-          </ContextMenu>
-        </Host>
+        <View className="rounded-full items-center justify-center size-10 bg-primary-100 pb-2">
+          <Host matchContents>
+            <ContextMenu>
+              <ContextMenu.Items>
+                <Button
+                  systemImage="phone.fill"
+                  onPress={onCall || (() => console.log("Start voice call"))}
+                >
+                  Voice call
+                </Button>
+                <Button
+                  systemImage="video.fill"
+                  onPress={
+                    onVideoCall || (() => console.log("Start video call"))
+                  }
+                >
+                  Video call
+                </Button>
+                <Button
+                  systemImage="pin.fill"
+                  onPress={onPin || (() => console.log("Pin conversation"))}
+                >
+                  Pin conversation
+                </Button>
+                <Button
+                  systemImage="flag.fill"
+                  onPress={onReport || (() => console.log("Report user"))}
+                >
+                  Report user
+                </Button>
+                <Button
+                  systemImage="trash.fill"
+                  onPress={
+                    onDelete || (() => console.log("Delete conversation"))
+                  }
+                >
+                  Delete conversation
+                </Button>
+              </ContextMenu.Items>
+              <ContextMenu.Trigger>
+                <Ionicons
+                  name="ellipsis-horizontal-outline"
+                  size={24}
+                  color="#081c15"
+                />
+              </ContextMenu.Trigger>
+            </ContextMenu>
+          </Host>
+        </View>
       </View>
-    </View>
+    </BlurView>
   );
 };

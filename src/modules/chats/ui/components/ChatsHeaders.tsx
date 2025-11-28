@@ -4,6 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Conversation } from "@/src/types/convex";
 import { Image } from "expo-image";
 import { Icons } from "@/src/constants/Icons";
+import { BlurView } from "expo-blur";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "@/src/providers/ThemeProvider";
 
 export const ChatsHeader1 = ({
   conversations,
@@ -22,7 +25,7 @@ export const ChatsHeader1 = ({
               height: 48,
             }}
           />
-          <Text className="font-bold text-xl text-primary-600">Whispurr</Text>
+          <Text className="font-bold text-xl text-accent">Whispurr</Text>
         </TouchableOpacity>
       </Link>
 
@@ -44,23 +47,32 @@ export const ChatsHeader1 = ({
   );
 };
 
-export const ChatsHeader2 = (
-  <View className="px-6 pb-3 flex-row justify-between items-center">
-    <View className="size-10" />
-    <View className="flex-1 items-center">
-      <Text className="font-bold text-xl text-primary-600 mb-0.5">
-        Whispurr
-      </Text>
-      <Link href={"/chats"} asChild>
-        <TouchableOpacity className="flex-row items-center gap-0.5">
-          <Text className="text-sm text-primary-600">Chats</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
-    <Link href={"/chats/add-conversation"} asChild>
-      <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
-        <Ionicons name="add" size={24} color="#081c15" />
-      </TouchableOpacity>
-    </Link>
-  </View>
-);
+export const ChatsHeader2 = () => {
+  const insets = useSafeAreaInsets();
+  const { isDark } = useTheme();
+
+  return (
+    <BlurView
+      intensity={80}
+      tint={isDark ? "dark" : "light"}
+      style={{ paddingTop: insets.top }}
+    >
+      <View className="px-6 pb-3 flex-row justify-between items-center">
+        <View className="size-10" />
+        <View className="flex-1 items-center">
+          <Text className="font-bold text-xl text-accent mb-0.5">Whispurr</Text>
+          <Link href={"/chats"} asChild>
+            <TouchableOpacity className="flex-row items-center gap-0.5">
+              <Text className="text-sm text-main">Chats</Text>
+            </TouchableOpacity>
+          </Link>
+        </View>
+        <Link href={"/chats/add-conversation"} asChild>
+          <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100">
+            <Ionicons name="add" size={24} color="#081c15" />
+          </TouchableOpacity>
+        </Link>
+      </View>
+    </BlurView>
+  );
+};
