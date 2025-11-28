@@ -4,19 +4,23 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { User } from "@/src/types/convex";
 
-export const ProfileHeader1 = <View className="h-[50px]" />;
+export const ProfileHeader1 = (
+  <View className="h-[50px] bg-app py-2">
+    <View className="flex-1 items-center">
+      <Text className="font-bold text-xl text-main mb-0.5">Profile</Text>
+    </View>
+  </View>
+);
 
 export const ProfileHeader2 = ({ user }: { user: User }) => {
   return (
-    <View className="px-6 pb-3 flex-row justify-center items-center">
+    <View className="px-6 py-2 flex-row justify-center items-center bg-app">
       {/*<View className="size-10" />*/}
       <View className="flex-1 items-center">
-        <Text className="font-bold text-xl text-primary-600 mb-0.5">
-          Profile
-        </Text>
+        <Text className="font-bold text-xl text-main mb-0.5">Profile</Text>
         <Link href={"/chats"} asChild>
           <TouchableOpacity className="flex-row items-center gap-0.5">
-            <Text className="text-sm text-primary-600">{user.username}</Text>
+            <Text className="text-sm text-accent">{user.username}</Text>
           </TouchableOpacity>
         </Link>
       </View>

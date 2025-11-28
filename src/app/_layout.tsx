@@ -17,6 +17,7 @@ import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeColors } from "@/src/constants/ThemeColors";
+import { ThemeProvider } from "@/src/providers/ThemeProvider";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -44,7 +45,9 @@ export default function RootLayout() {
       <ClerkLoaded>
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
           <GestureHandlerRootView>
-            <RootAuthLayout />
+            <ThemeProvider>
+              <RootAuthLayout />
+            </ThemeProvider>
           </GestureHandlerRootView>
         </ConvexProviderWithClerk>
       </ClerkLoaded>

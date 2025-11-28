@@ -80,7 +80,7 @@ const AnimatedHeader = ({
 
   return (
     <Animated.View
-      className="absolute top-0 left-0 right-0 bg-white z-50"
+      className="absolute top-0 left-0 right-0 bg-app z-50"
       style={[
         shadowStyle,
         {

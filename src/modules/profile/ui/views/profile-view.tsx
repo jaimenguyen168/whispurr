@@ -1,4 +1,11 @@
-import { View, Text, Image, Alert, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  Alert,
+  TouchableOpacity,
+  Switch,
+} from "react-native";
 import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -8,7 +15,6 @@ import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
 } from "react-native-reanimated";
-import { ChatsHeader2 } from "@/src/modules/chats/ui/components/ChatsHeaders";
 import AnimatedHeader from "@/src/components/AnimatedHeader";
 import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,9 +22,15 @@ import {
   ProfileHeader1,
   ProfileHeader2,
 } from "@/src/modules/profile/ui/components/ProfileHeaders";
+import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
+import { ThemeColors } from "@/src/constants/ThemeColors";
+
+const SCROLL_THRESHOLD = 56;
 
 const ProfileView = () => {
   const { signOut } = useAuth();
+  const { setTheme, isDark } = useTheme();
+  const colors = useThemeColors();
   const scrollOffset = useSharedValue(0);
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -38,10 +50,6 @@ const ProfileView = () => {
   };
 
   const handleFriends = () => {
-    router.push("/");
-  };
-
-  const handleAccountPrivacy = () => {
     router.push("/");
   };
 
@@ -87,7 +95,7 @@ const ProfileView = () => {
   return (
     <View className="flex-1">
       <AnimatedHeader
-        scrollThreshold={50}
+        scrollThreshold={SCROLL_THRESHOLD}
         scrollOffset={scrollOffset}
         header1={ProfileHeader1}
         header2={<ProfileHeader2 user={currentUser} />}
@@ -95,15 +103,16 @@ const ProfileView = () => {
       <Animated.ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerClassName="flex-1 px-6"
+        showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
         style={{
-          paddingTop: 50,
+          paddingTop: SCROLL_THRESHOLD + 12,
         }}
       >
         {/* User Profile Header */}
         <TouchableOpacity
           onPress={handleEditProfile}
-          className="bg-white py-4 mb-4 flex-row items-center justify-between pr-8"
+          className="bg-transparent px-4 py-4 mb-4 flex-row items-center justify-between pr-10"
         >
           <View className="flex-row items-center">
             {/* Profile Image */}
@@ -125,20 +134,24 @@ const ProfileView = () => {
 
             {/* User Info */}
             <View className="flex-1">
-              <Text className="text-2xl font-bold text-secondary-800 mb-1">
+              <Text className="text-2xl font-bold text-main mb-1">
                 {currentUser.username || "User"}
               </Text>
-              <Text className="text-secondary-600 text-base">
+              <Text className="text-secondary text-base">
                 {currentUser.email}
               </Text>
             </View>
           </View>
 
-          <Ionicons name="create-outline" size={24} color="black" />
+          <Ionicons
+            name="create-outline"
+            size={24}
+            color={colors.tabIconSelected}
+          />
         </TouchableOpacity>
 
         {/* Settings Sections */}
-        <View className="mb-4">
+        <View className="mb-4 rounded-xl overflow-hidden">
           <SettingsItem
             icon="people-outline"
             title="Friends"
@@ -154,49 +167,63 @@ const ProfileView = () => {
         {/* Preferences Section */}
         <View className="mb-4">
           <View className="py-3">
-            <Text className="text-xl font-bold text-secondary-800">
-              Preferences
-            </Text>
+            <Text className="text-xl font-bold text-main">Preferences</Text>
           </View>
-          <SettingsItem
-            icon="lock-closed-outline"
-            title="Account and Privacy"
-            onPress={handleAccountPrivacy}
-          />
-          <SettingsItem
-            icon="notifications-outline"
-            title="Notifications"
-            onPress={handleNotifications}
-          />
-          <SettingsItem
-            icon="volume-medium-outline"
-            title="Sounds"
-            onPress={handleSounds}
-          />
+          <View className="rounded-xl overflow-hidden">
+            <SettingsItem
+              icon="moon-outline"
+              title="Dark Mode"
+              showChevron={false}
+              rightComponent={
+                <Switch
+                  value={isDark}
+                  onValueChange={() => setTheme(isDark ? "light" : "dark")}
+                  trackColor={{
+                    false: colors.muted,
+                    true: ThemeColors.primary.base,
+                  }}
+                  thumbColor="#ffffff"
+                  ios_backgroundColor={isDark ? "#374151" : "#E5E7EB"}
+                />
+              }
+            />
+            <SettingsItem
+              icon="notifications-outline"
+              title="Notifications"
+              onPress={handleNotifications}
+            />
+            <SettingsItem
+              icon="volume-medium-outline"
+              title="Sounds"
+              onPress={handleSounds}
+            />
+          </View>
         </View>
 
         {/* Other Section */}
         <View className="mb-8">
           <View className="py-3">
-            <Text className="text-xl font-bold text-secondary-800">Other</Text>
+            <Text className="text-xl font-bold text-main">Other</Text>
           </View>
-          <SettingsItem
-            icon="book-outline"
-            title="User Guide"
-            onPress={handleUserGuide}
-          />
-          <SettingsItem
-            icon="help-circle-outline"
-            title="Help And Feedback"
-            onPress={handleHelpFeedback}
-          />
-          <SettingsItem
-            icon="log-out-outline"
-            title="Log Out"
-            onPress={handleLogOut}
-            showChevron={true}
-            iconColor="#ef4444"
-          />
+          <View className="rounded-xl overflow-hidden">
+            <SettingsItem
+              icon="book-outline"
+              title="User Guide"
+              onPress={handleUserGuide}
+            />
+            <SettingsItem
+              icon="help-circle-outline"
+              title="Help And Feedback"
+              onPress={handleHelpFeedback}
+            />
+            <SettingsItem
+              icon="log-out-outline"
+              title="Log Out"
+              onPress={handleLogOut}
+              showChevron={true}
+              iconColor="#ef4444"
+            />
+          </View>
         </View>
 
         {/* Bottom spacing */}

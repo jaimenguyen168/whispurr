@@ -40,4 +40,100 @@ module.exports = {
       },
     },
   },
+  plugins: [
+    function ({ addUtilities, theme }) {
+      const newUtilities = {
+        // Background utilities
+        ".bg-app": {
+          backgroundColor: theme("colors.secondary.50"), // #f8f9fa
+          "@media (prefers-color-scheme: dark)": {
+            backgroundColor: theme("colors.secondary.800"), // #212529
+          },
+        },
+        ".bg-card": {
+          backgroundColor: "#ffffff",
+          "@media (prefers-color-scheme: dark)": {
+            backgroundColor: theme("colors.secondary.700"), // #343a40
+          },
+        },
+        ".bg-surface": {
+          backgroundColor: theme("colors.secondary.100"), // #e9ecef
+          "@media (prefers-color-scheme: dark)": {
+            backgroundColor: theme("colors.secondary.600"), // #495057
+          },
+        },
+
+        // Text utilities
+        ".text-main": {
+          color: theme("colors.secondary.800"), // #212529
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.secondary.50"), // #f8f9fa
+          },
+        },
+        ".text-secondary": {
+          color: theme("colors.secondary.600"), // #495057
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.secondary.300"), // #ced4da
+          },
+        },
+        ".text-muted": {
+          color: theme("colors.secondary.400"), // #adb5bd
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.secondary.500"), // #6c757d
+          },
+        },
+
+        // Border utilities
+        ".border-soft": {
+          borderColor: theme("colors.secondary.200"), // #dee2e6
+          "@media (prefers-color-scheme: dark)": {
+            borderColor: theme("colors.secondary.600"), // #495057
+          },
+        },
+        ".border-divider": {
+          borderColor: theme("colors.secondary.200"), // #dee2e6
+          "@media (prefers-color-scheme: dark)": {
+            borderColor: theme("colors.secondary.700"), // #343a40
+          },
+        },
+
+        // Icon utilities
+        ".text-icon": {
+          color: theme("colors.secondary.500"), // #6c757d
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.secondary.400"), // #adb5bd
+          },
+        },
+
+        // Primary accent utilities
+        ".text-accent": {
+          color: theme("colors.primary.500"), // #40916c
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.primary.300"), // #74c69d
+          },
+        },
+        ".bg-accent": {
+          backgroundColor: theme("colors.primary.500"), // #40916c
+          "@media (prefers-color-scheme: dark)": {
+            backgroundColor: theme("colors.primary.400"), // #52b788
+          },
+        },
+
+        // Tab utilities
+        ".text-tab-default": {
+          color: theme("colors.secondary.500"), // #6c757d
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.secondary.400"), // #adb5bd
+          },
+        },
+        ".text-tab-selected": {
+          color: theme("colors.primary.500"), // #40916c
+          "@media (prefers-color-scheme: dark)": {
+            color: theme("colors.primary.300"), // #74c69d
+          },
+        },
+      };
+      addUtilities(newUtilities);
+    },
+  ],
 };

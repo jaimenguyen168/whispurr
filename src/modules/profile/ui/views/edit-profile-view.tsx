@@ -18,7 +18,7 @@ import AppButton from "@/src/components/AppButton";
 import FormField from "@/src/modules/auth/ui/components/FormField";
 import { validateFormData } from "@/src/utils/form-validator";
 import BlurNavigationHeader from "@/src/components/BlurNavigationHeader";
-import { ThemeColors } from "@/src/constants/ThemeColors";
+import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
 
 const profileSchema = z.object({
   username: z
@@ -29,6 +29,8 @@ const profileSchema = z.object({
 });
 
 const EditProfileView = () => {
+  const { isDark } = useTheme();
+  const colors = useThemeColors();
   const user = useQuery(api.functions.users.getCurrentUser);
   const updateProfile = useMutation(api.functions.users.updateUserProfile);
   const { uploadImageToConvex } = useImageUpload();
@@ -148,25 +150,21 @@ const EditProfileView = () => {
     <View className="flex-1 bg-app">
       <BlurNavigationHeader
         title="Edit Profile"
-        statusBarStyle={"light"}
-        blurType={"light"}
+        statusBarStyle={isDark ? "light" : "dark"}
+        blurType={isDark ? "dark" : "light"}
         leftComponent={
           <TouchableOpacity
             onPress={() => router.dismiss()}
             className="p-3 rounded-full"
           >
-            <Ionicons
-              name="chevron-back"
-              size={24}
-              color={ThemeColors.secondary.darkest}
-            />
+            <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
         }
       />
       <ScrollView
         className="flex-1 bg-app"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingTop: 120 }}
+        contentContainerStyle={{ paddingTop: 140 }}
       >
         {/* Profile Photo Section */}
         <View className="items-center pb-8">
@@ -215,9 +213,7 @@ const EditProfileView = () => {
         <View className="px-6">
           {/* Username Field */}
           <View className="mb-6">
-            <Text className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-              Username
-            </Text>
+            <Text className="text-secondary text-sm mb-2">Username</Text>
             <FormField
               label=""
               value={formData.username}
@@ -233,15 +229,11 @@ const EditProfileView = () => {
 
           {/* Email Field (Read-only) */}
           <View className="mb-8">
-            <Text className="text-gray-600 dark:text-gray-400 text-sm mb-2">
-              Email
-            </Text>
-            <View className="py-4 px-4 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl">
-              <Text className="font-medium text-gray-400 dark:text-gray-600">
-                {formData.email}
-              </Text>
+            <Text className="text-secondary text-sm mb-2">Email</Text>
+            <View className="py-4 px-4 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl">
+              <Text className="font-medium text-muted">{formData.email}</Text>
             </View>
-            <Text className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+            <Text className="text-muted text-xs mt-1">
               Email cannot be changed
             </Text>
           </View>
