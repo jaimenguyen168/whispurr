@@ -1,5 +1,6 @@
-import { mutation, query } from "../_generated/server";
+import { action, mutation, query } from "../_generated/server";
 import { v } from "convex/values";
+import { api } from "../_generated/api";
 
 export const getMessagesForConversation = query({
   args: { conversationId: v.id("conversations") },
@@ -41,6 +42,35 @@ export const createMessage = mutation({
       lastMessageEncryptionKey: args.encryptionKey,
       updatedAt: Date.now(),
     });
+
+    // Get conversation to find recipient
+    const conversation = await ctx.db.get(args.conversationId);
+    if (conversation) {
+      const recipientId = conversation.participantIds.find(
+        (id) => id !== args.senderId,
+      );
+
+      if (recipientId) {
+        // Get sender info
+        const sender = await ctx.db.get(args.senderId);
+
+        if (sender) {
+          // Schedule push notification
+          // New version:
+          await ctx.scheduler.runAfter(
+            0,
+            api.functions.messages.sendMessageNotification,
+            {
+              recipientId,
+              senderName: sender.username || sender.email || "Someone",
+              messageContent: args.content, // Pass encrypted content
+              encryptionKey: args.encryptionKey, // Pass the encryption key
+              conversationId: args.conversationId,
+            },
+          );
+        }
+      }
+    }
 
     return messageId;
   },
@@ -163,5 +193,94 @@ export const deleteMessage = mutation({
     }
 
     return { success: true };
+  },
+});
+
+interface PushNotificationMessage {
+  to: string;
+  sound: string;
+  title: string;
+  body: string;
+  data: {
+    conversationId: string;
+    type: string;
+  };
+  priority: string;
+}
+
+interface NotificationResult {
+  success: boolean;
+  result?: any;
+  error?: string;
+  reason?: string;
+}
+
+export const sendMessageNotification = action({
+  args: {
+    recipientId: v.id("users"),
+    senderName: v.string(),
+    messageContent: v.string(),
+    encryptionKey: v.optional(v.string()),
+    conversationId: v.id("conversations"),
+  },
+  handler: async (ctx, args): Promise<NotificationResult> => {
+    try {
+      // Get recipient's push token
+      const recipient = await ctx.runQuery(api.functions.users.getUserById, {
+        userId: args.recipientId,
+      });
+
+      if (!recipient?.pushToken) {
+        console.log("No push token found for recipient");
+        return { success: false, reason: "No push token" };
+      }
+
+      const decryptedContent = await ctx.runAction(
+        api.lib.decryption.decryptMessageAction,
+        {
+          encryptedContent: args.messageContent,
+          conversationId: args.conversationId,
+          encryptionKey: args.encryptionKey || "",
+        },
+      );
+
+      const notificationBody =
+        decryptedContent.length > 50
+          ? decryptedContent.substring(0, 47) + "..."
+          : decryptedContent;
+
+      // Send push notification
+      const message: PushNotificationMessage = {
+        to: recipient.pushToken,
+        sound: "default",
+        title: args.senderName,
+        body: notificationBody,
+        data: {
+          conversationId: args.conversationId,
+          type: "message",
+        },
+        priority: "high",
+      };
+
+      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(message),
+      });
+
+      const result = await response.json();
+      console.log("Push notification sent:", result);
+      return { success: true, result };
+    } catch (error) {
+      console.error("Error sending push notification:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
   },
 });

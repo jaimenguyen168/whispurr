@@ -6,6 +6,7 @@ export const users = defineTable({
   username: v.string(),
   email: v.string(),
   imageUrl: v.optional(v.string()),
+  pushToken: v.optional(v.string()),
   // Add encryption backup fields
   encryptedMasterKey: v.optional(v.string()),
   keyDerivationSalt: v.optional(v.string()),

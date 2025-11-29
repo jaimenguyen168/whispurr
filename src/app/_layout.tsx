@@ -11,13 +11,15 @@ import {
   Nunito_700Bold,
   Nunito_800ExtraBold,
 } from "@expo-google-fonts/nunito";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexProvider, ConvexReactClient, useQuery } from "convex/react";
 import { ActivityIndicator, View } from "react-native";
 import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import { ThemeProvider } from "@/src/providers/ThemeProvider";
+import { api } from "@/convex/_generated/api";
+import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -57,6 +59,13 @@ export default function RootLayout() {
 
 const RootAuthLayout = () => {
   const { isLoaded, isSignedIn } = useAuth();
+
+  const currentUser = useQuery(
+    api.functions.users.getCurrentUser,
+    isSignedIn ? undefined : "skip",
+  );
+
+  usePushNotifications(currentUser);
 
   if (!isLoaded) {
     return (

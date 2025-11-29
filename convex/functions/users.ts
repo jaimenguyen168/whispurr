@@ -135,3 +135,28 @@ export const updateUserProfile = mutation({
     return { success: true };
   },
 });
+
+export const updatePushToken = mutation({
+  args: {
+    pushToken: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    await ctx.db.patch(user._id, {
+      pushToken: args.pushToken,
+    });
+
+    return { success: true };
+  },
+});
+
+export const getUserPushToken = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    return user?.pushToken;
+  },
+});

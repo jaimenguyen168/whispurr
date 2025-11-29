@@ -121,7 +121,9 @@ const MessageItem = ({ message, otherUser }: MessageItemProps) => {
           </Text>
 
           {!isFromOtherUser && (
-            <View className="ml-1">{getStatusIcon(message.status)}</View>
+            <View className="ml-1 dark:text-secondary-50">
+              {getStatusIcon(message.status)}
+            </View>
           )}
         </View>
       </View>

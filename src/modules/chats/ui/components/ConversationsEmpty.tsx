@@ -4,9 +4,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 const ConversationsEmpty = () => {
   return (
-    <View className="flex-1 justify-center items-center bg-white px-6">
+    <View className="flex-1 justify-center items-center bg-app px-6">
       <View className="items-center gap-3">
-        <View className="size-20 bg-primary-50 rounded-full items-center justify-center border-2 border-primary-200">
+        <View className="size-20 bg-primary-50 dark:bg-primary-50/10 rounded-full items-center justify-center border-2 border-primary-200 dark:border-primary-500">
           <Ionicons
             name="chatbubble-ellipses-outline"
             size={40}
@@ -14,7 +14,7 @@ const ConversationsEmpty = () => {
           />
         </View>
         <View className="items-center gap-1">
-          <Text className="text-primary-700 font-bold text-xl">
+          <Text className="text-accent font-bold text-xl">
             No conversations yet
           </Text>
           <Text className="text-primary-500 font-medium text-base text-center leading-6">
