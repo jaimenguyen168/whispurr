@@ -13,6 +13,7 @@ import type * as functions_conversations from "../functions/conversations.js";
 import type * as functions_messages from "../functions/messages.js";
 import type * as functions_users from "../functions/users.js";
 import type * as http from "../http.js";
+import type * as lib_decryption from "../lib/decryption.js";
 import type * as schema_conversations from "../schema/conversations.js";
 import type * as schema_users from "../schema/users.js";
 import type * as storage from "../storage.js";
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   "functions/messages": typeof functions_messages;
   "functions/users": typeof functions_users;
   http: typeof http;
+  "lib/decryption": typeof lib_decryption;
   "schema/conversations": typeof schema_conversations;
   "schema/users": typeof schema_users;
   storage: typeof storage;

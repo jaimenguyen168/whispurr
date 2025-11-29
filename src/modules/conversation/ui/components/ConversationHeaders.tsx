@@ -40,7 +40,7 @@ export const ConversationHeader1 = ({
         </TouchableOpacity>
         <Link href={"/profile"} asChild>
           <TouchableOpacity className="flex-row items-center gap-3 flex-1 min-w-0">
-            <View className="rounded-full items-center justify-center size-12 bg-primary-100 overflow-hidden">
+            <View className="rounded-full items-center justify-center size-12 bg-primary-100 dark:bg-primary-400 overflow-hidden">
               {user.imageUrl ? (
                 <Image
                   source={user.imageUrl}
@@ -70,19 +70,19 @@ export const ConversationHeader1 = ({
       <View className="flex-row gap-3 flex-shrink-0">
         <TouchableOpacity
           onPress={onCall || (() => console.log("Start voice call"))}
-          className="rounded-full items-center justify-center size-10 bg-primary-100"
+          className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400"
         >
           <Ionicons name="call-outline" size={20} color="#081c15" />
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={onVideoCall || (() => console.log("Start video call"))}
-          className="rounded-full items-center justify-center size-10 bg-primary-100"
+          className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400"
         >
           <Ionicons name="videocam-outline" size={22} color="#081c15" />
         </TouchableOpacity>
 
-        <View className="rounded-full items-center justify-center size-10 bg-primary-100">
+        <View className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
           <Host matchContents>
             <ContextMenu>
               <ContextMenu.Items>
@@ -108,7 +108,7 @@ export const ConversationHeader1 = ({
                 </Button>
               </ContextMenu.Items>
               <ContextMenu.Trigger>
-                <View className="rounded-full items-center justify-center size-10 bg-primary-100">
+                <View className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
                   <Ionicons
                     name="ellipsis-horizontal-outline"
                     size={24}
@@ -156,7 +156,7 @@ export const ConversationHeader2 = ({
           <Text className="text-sm text-muted">Active 10m ago</Text>
         </View>
 
-        <View className="rounded-full items-center justify-center size-10 bg-primary-100 pb-2">
+        <View className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400 pb-2">
           <Host matchContents>
             <ContextMenu>
               <ContextMenu.Items>
