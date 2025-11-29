@@ -160,3 +160,29 @@ export const getUserPushToken = query({
     return user?.pushToken;
   },
 });
+
+export const getUserNotificationPreference = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.get(args.userId);
+    return user?.notificationsEnabled ?? true;
+  },
+});
+
+export const updateNotificationPreference = mutation({
+  args: {
+    notificationsEnabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    await ctx.db.patch(user._id, {
+      notificationsEnabled: args.notificationsEnabled,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});

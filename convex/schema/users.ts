@@ -2,11 +2,12 @@ import { v } from "convex/values";
 import { defineTable } from "convex/server";
 
 export const users = defineTable({
-  externalId: v.string(), // Clerk user ID
+  externalId: v.string(),
   username: v.string(),
   email: v.string(),
   imageUrl: v.optional(v.string()),
   pushToken: v.optional(v.string()),
+  notificationsEnabled: v.optional(v.boolean()),
   // Add encryption backup fields
   encryptedMasterKey: v.optional(v.string()),
   keyDerivationSalt: v.optional(v.string()),

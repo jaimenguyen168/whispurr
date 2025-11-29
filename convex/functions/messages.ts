@@ -53,21 +53,27 @@ export const createMessage = mutation({
       if (recipientId) {
         // Get sender info
         const sender = await ctx.db.get(args.senderId);
+        const recipient = await ctx.db.get(recipientId);
 
-        if (sender) {
-          // Schedule push notification
-          // New version:
-          await ctx.scheduler.runAfter(
-            0,
-            api.functions.messages.sendMessageNotification,
-            {
-              recipientId,
-              senderName: sender.username || sender.email || "Someone",
-              messageContent: args.content, // Pass encrypted content
-              encryptionKey: args.encryptionKey, // Pass the encryption key
-              conversationId: args.conversationId,
-            },
-          );
+        if (sender && recipient) {
+          // Check if recipient has notifications enabled (default to true if not set)
+          const notificationsEnabled = recipient.notificationsEnabled ?? true;
+
+          // Only send notification if recipient has notifications enabled
+          if (notificationsEnabled) {
+            // Schedule push notification
+            await ctx.scheduler.runAfter(
+              0,
+              api.functions.messages.sendMessageNotification,
+              {
+                recipientId,
+                senderName: sender.username || sender.email || "Someone",
+                messageContent: args.content, // Pass encrypted content
+                encryptionKey: args.encryptionKey, // Pass the encryption key
+                conversationId: args.conversationId,
+              },
+            );
+          }
         }
       }
     }

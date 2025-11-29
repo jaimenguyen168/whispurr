@@ -7,7 +7,7 @@ import {
   Switch,
 } from "react-native";
 import React from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import SettingsItem from "@/src/modules/profile/ui/components/SettingsItem";
@@ -36,6 +36,9 @@ const ProfileView = () => {
   });
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
+  const updateNotificationPreference = useMutation(
+    api.functions.users.updateNotificationPreference,
+  );
 
   const handleEditProfile = () => {
     router.push("/profile/edit-profile");
@@ -49,8 +52,18 @@ const ProfileView = () => {
     router.push("/");
   };
 
-  const handleNotifications = () => {
-    router.push("/");
+  const handleNotificationToggle = async (value: boolean) => {
+    try {
+      await updateNotificationPreference({
+        notificationsEnabled: value,
+      });
+    } catch (error) {
+      console.error("Failed to update notification preference:", error);
+      Alert.alert(
+        "Error",
+        "Failed to update notification settings. Please try again.",
+      );
+    }
   };
 
   const handleSounds = () => {
@@ -185,8 +198,20 @@ const ProfileView = () => {
             />
             <SettingsItem
               icon="notifications-outline"
-              title="Notifications"
-              onPress={handleNotifications}
+              title="Push Notifications"
+              showChevron={false}
+              rightComponent={
+                <Switch
+                  value={currentUser.notificationsEnabled ?? true}
+                  onValueChange={handleNotificationToggle}
+                  trackColor={{
+                    false: colors.muted,
+                    true: ThemeColors.primary.base,
+                  }}
+                  thumbColor="#ffffff"
+                  ios_backgroundColor={isDark ? "#374151" : "#E5E7EB"}
+                />
+              }
             />
             <SettingsItem
               icon="volume-medium-outline"
