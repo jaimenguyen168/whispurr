@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { formatTime } from "@/src/utils/time";
-import { Conversation } from "@/src/types/convex";
+import { ConversationWithDetails } from "@/src/types/convex";
 import ReanimatedSwipeable, {
   SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -18,10 +18,10 @@ import Reanimated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import SwipeAction from "@/src/components/SwipeAction";
-import { decryptMessage } from "@/src/modules/conversation/utils"; // Add this import
+import { decryptMessage } from "@/src/modules/conversation/utils";
 
 interface ConversationItemProps {
-  conversation: Conversation;
+  conversation: ConversationWithDetails;
   currentUserId: string;
 }
 
@@ -35,11 +35,12 @@ const ConversationItem = ({
   const heightAnim = useSharedValue(80);
   const opacityAnim = useSharedValue(1);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [decryptedLastMessage, setDecryptedLastMessage] = useState(""); // Add this state
+  const [decryptedLastMessage, setDecryptedLastMessage] = useState("");
 
-  const otherParticipantId = conversation.participantIds?.find(
-    (participantId) => participantId !== currentUserId,
+  const otherParticipantRecord = conversation.allParticipants?.find(
+    (participant) => participant.userId !== currentUserId,
   );
+  const otherParticipantId = otherParticipantRecord?.userId;
 
   const otherParticipant = useQuery(
     api.functions.users.getUserById,
@@ -47,7 +48,7 @@ const ConversationItem = ({
   );
 
   const deleteConversation = useMutation(
-    api.functions.conversations.deleteConversation,
+    api.functions.conversations.leaveConversation,
   );
 
   // Add useEffect to decrypt the last message

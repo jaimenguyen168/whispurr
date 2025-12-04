@@ -36,6 +36,7 @@ const HEADER_HEIGHT = 60;
 const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const [message, setMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
@@ -50,8 +51,9 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     api.functions.conversations.getConversationById,
     isDeleting ? "skip" : { conversationId },
   );
+
   const deleteConversation = useMutation(
-    api.functions.conversations.deleteConversation,
+    api.functions.conversations.leaveConversation,
   );
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
@@ -61,6 +63,11 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     isDeleting ? "skip" : { conversationId },
   );
 
+  const otherUserParticipant = conversation?.allParticipants?.find(
+    (participant) => participant.userId !== currentUser?._id,
+  );
+  const hasOtherUserLeft = otherUserParticipant?.leftAt !== undefined;
+
   const messages = useQuery(
     api.functions.messages.getMessagesForConversation,
     isDeleting ? "skip" : { conversationId },
@@ -69,7 +76,9 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const createMessage = useMutation(api.functions.messages.createMessage);
 
   const sendMessage = async () => {
-    if (!message.trim() || !currentUser) return;
+    if (!message.trim() || !currentUser || isSending) return;
+
+    setIsSending(true);
 
     try {
       const { encryptedContent, encryptionKey } = await encryptMessage(
@@ -81,13 +90,15 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         conversationId,
         senderId: currentUser._id,
         content: encryptedContent,
-        encryptionKey: encryptionKey,
+        encryptionKey,
         type: "text",
       });
 
       setMessage("");
     } catch (error) {
       console.error("Failed to send message:", error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -216,6 +227,15 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
           />
+
+          {hasOtherUserLeft && (
+            <View className="bg-surface px-4 py-3 border-t border-soft">
+              <Text className="text-secondary text-center text-sm">
+                {otherUser.username} has left this conversation. You can no
+                longer send messages.
+              </Text>
+            </View>
+          )}
         </View>
 
         <MessageInput
@@ -223,7 +243,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           onMessageChange={setMessage}
           onSendMessage={sendMessage}
           onAddAttachment={() => console.log("Add attachment")}
-          disabled={isDeleting}
+          disabled={isDeleting || isSending || hasOtherUserLeft}
         />
       </KeyboardAvoidingView>
     </View>

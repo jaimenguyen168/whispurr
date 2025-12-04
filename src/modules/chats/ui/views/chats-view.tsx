@@ -14,7 +14,7 @@ import {
   ChatsHeader1,
   ChatsHeader2,
 } from "@/src/modules/chats/ui/components/ChatsHeaders";
-import { Conversation } from "@/src/types/convex";
+import { ConversationWithDetails } from "@/src/types/convex";
 import ConversationItem from "@/src/modules/chats/ui/components/ConversationItem";
 
 const HEADER_HEIGHT = 60;
@@ -39,7 +39,11 @@ const ChatsView = () => {
     return <ConversationsLoading />;
   }
 
-  const renderConversationItem = ({ item }: { item: Conversation }) => {
+  const renderConversationItem = ({
+    item,
+  }: {
+    item: ConversationWithDetails;
+  }) => {
     return (
       <ConversationItem conversation={item} currentUserId={currentUser._id} />
     );

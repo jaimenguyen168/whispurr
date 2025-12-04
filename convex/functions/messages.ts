@@ -5,7 +5,7 @@ import { api } from "../_generated/api";
 export const getMessagesForConversation = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
         q.eq("conversationId", args.conversationId),
@@ -13,6 +13,8 @@ export const getMessagesForConversation = query({
       .filter((q) => q.eq(q.field("deletedAt"), undefined))
       .order("asc")
       .collect();
+
+    return messages ?? [];
   },
 });
 
@@ -25,6 +27,14 @@ export const createMessage = mutation({
     encryptionKey: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // First, unhide the conversation for all participants (in case it was "deleted")
+    await ctx.runMutation(
+      api.functions.conversations.unhideConversationOnMessage,
+      {
+        conversationId: args.conversationId,
+      },
+    );
+
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       senderId: args.senderId,
@@ -43,36 +53,48 @@ export const createMessage = mutation({
       updatedAt: Date.now(),
     });
 
-    // Get conversation to find recipient
-    const conversation = await ctx.db.get(args.conversationId);
-    if (conversation) {
-      const recipientId = conversation.participantIds.find(
-        (id) => id !== args.senderId,
-      );
+    // Get active participants for this conversation
+    const activeParticipants = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", args.conversationId),
+      )
+      .filter((q) => q.eq(q.field("leftAt"), undefined))
+      .collect();
 
-      if (recipientId) {
-        // Get sender info
-        const sender = await ctx.db.get(args.senderId);
-        const recipient = await ctx.db.get(recipientId);
+    // Find recipient(s) - exclude sender
+    const recipients = activeParticipants.filter(
+      (p) => p.userId !== args.senderId,
+    );
 
-        if (sender && recipient) {
-          // Check if recipient has notifications enabled (default to true if not set)
-          const notificationsEnabled = recipient.notificationsEnabled ?? true;
+    if (recipients.length > 0) {
+      // Get sender info
+      const sender = await ctx.db.get(args.senderId);
 
-          // Only send notification if recipient has notifications enabled
-          if (notificationsEnabled) {
-            // Schedule push notification
-            await ctx.scheduler.runAfter(
-              0,
-              api.functions.messages.sendMessageNotification,
-              {
-                recipientId,
-                senderName: sender.username || sender.email || "Someone",
-                messageContent: args.content, // Pass encrypted content
-                encryptionKey: args.encryptionKey, // Pass the encryption key
-                conversationId: args.conversationId,
-              },
-            );
+      if (sender) {
+        // Send notifications to all recipients
+        for (const recipientParticipant of recipients) {
+          const recipient = await ctx.db.get(recipientParticipant.userId);
+
+          if (recipient) {
+            // Check if recipient has notifications enabled (default to true if not set)
+            const notificationsEnabled = recipient.notificationsEnabled ?? true;
+
+            // Only send notification if recipient has notifications enabled
+            if (notificationsEnabled) {
+              // Schedule push notification
+              await ctx.scheduler.runAfter(
+                0,
+                api.functions.messages.sendMessageNotification,
+                {
+                  recipientId: recipientParticipant.userId,
+                  senderName: sender.username || sender.email || "Someone",
+                  messageContent: args.content, // Pass encrypted content
+                  encryptionKey: args.encryptionKey, // Pass the encryption key
+                  conversationId: args.conversationId,
+                },
+              );
+            }
           }
         }
       }
@@ -231,7 +253,7 @@ export const sendMessageNotification = action({
   },
   handler: async (ctx, args): Promise<NotificationResult> => {
     try {
-      // Get recipient's push token
+      // Get recipient's push token and notification preference
       const recipient = await ctx.runQuery(api.functions.users.getUserById, {
         userId: args.recipientId,
       });
@@ -239,6 +261,12 @@ export const sendMessageNotification = action({
       if (!recipient?.pushToken) {
         console.log("No push token found for recipient");
         return { success: false, reason: "No push token" };
+      }
+
+      // Double-check notification preference (should already be checked in createMessage)
+      if (!recipient.notificationsEnabled) {
+        console.log("Notifications disabled for recipient");
+        return { success: false, reason: "Notifications disabled" };
       }
 
       const decryptedContent = await ctx.runAction(
