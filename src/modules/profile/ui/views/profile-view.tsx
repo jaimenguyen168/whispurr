@@ -29,6 +29,8 @@ const ProfileView = () => {
   const colors = useThemeColors();
   const scrollOffset = useSharedValue(0);
 
+  const clearPushToken = useMutation(api.functions.users.clearPushToken);
+
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollOffset.value = event.contentOffset.y;
@@ -88,7 +90,16 @@ const ProfileView = () => {
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => signOut(),
+        onPress: async () => {
+          try {
+            await clearPushToken();
+            console.log("Push token cleared");
+          } catch (error) {
+            console.error("Failed to clear push token:", error);
+          } finally {
+            signOut();
+          }
+        },
       },
     ]);
   };

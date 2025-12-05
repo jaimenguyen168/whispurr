@@ -198,3 +198,17 @@ export const getUserNotificationPreference = query({
     return user?.notificationsEnabled ?? true; // Default to true if not set
   },
 });
+
+export const clearPushToken = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    await ctx.db.patch(user._id, {
+      pushToken: undefined,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
