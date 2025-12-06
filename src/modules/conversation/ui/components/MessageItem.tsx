@@ -16,30 +16,31 @@ import Animated, {
   withDelay,
 } from "react-native-reanimated";
 import { BlurView } from "expo-blur";
-import { Message, User } from "@/src/types/convex";
+import { Message, MessageId, User } from "@/src/types/convex";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { formatTime } from "@/src/utils/time";
 import { decryptMessage } from "@/src/modules/conversation/utils";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
+import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
+import { EmojiPopup } from "react-native-emoji-popup";
 
 interface MessageItemProps {
   message: Message;
+  currentUser?: User;
   otherUser?: User;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
   onDelete?: (messageId: string) => void;
   onUnsend?: (messageId: string) => void;
   onLongPress?: (message: Message) => void;
-  onReact?: (messageId: string, emoji: string) => void;
+  onReact?: (messageId: MessageId, emoji: string) => void;
   onCopy?: (message: Message) => void;
 }
 
-// Common reaction emojis like Instagram
-const REACTION_EMOJIS = ["❤️", "😂", "😮", "😢", "😡", "👍"];
-
 const MessageItem = ({
   message,
+  currentUser,
   otherUser,
   onReply,
   onForward,
@@ -52,6 +53,18 @@ const MessageItem = ({
   const colors = useThemeColors();
   const isFromOtherUser = message.senderId === otherUser?._id;
   const messageContainerRef = useRef<View>(null);
+  const hasReactions = message.reactions && message.reactions.length > 0;
+  const [reactionEmojis, setReactionEmojis] = useState([
+    "❤️",
+    "😂",
+    "😮",
+    "😢",
+    "😡",
+    "👍",
+  ]);
+  const [recentReaction, setRecentReaction] = useState<string | undefined>();
+  const lastTap = useRef<number | null>(null);
+  const DOUBLE_PRESS_DELAY = 300;
 
   const [decryptedContent, setDecryptedContent] = useState("");
   const [showModal, setShowModal] = useState(false);
@@ -209,9 +222,45 @@ const MessageItem = ({
     setTimeout(() => setShowModal(false), 450);
   };
 
+  useEffect(() => {
+    if (!currentUser || !message.reactions) return;
+
+    // Get the current user's reactions for this message
+    const userReactions = message.reactions.filter(
+      (reaction) => reaction.userId === currentUser._id,
+    );
+
+    userReactions.forEach((reaction) => {
+      // If the user's reaction emoji is not in the current list, replace the last one
+      if (!reactionEmojis.includes(reaction.emoji)) {
+        setReactionEmojis((prev) => {
+          const newEmojis = [...prev];
+          newEmojis[newEmojis.length - 1] = reaction.emoji;
+          return newEmojis;
+        });
+      }
+    });
+  }, [message.reactions, currentUser, reactionEmojis]);
+
   const handleReaction = (emoji: string) => {
     onReact?.(message._id, emoji);
+    setRecentReaction(emoji);
     handleCloseBlur();
+
+    setTimeout(() => setRecentReaction(undefined), 1000);
+  };
+
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    if (lastTap.current && now - lastTap.current < DOUBLE_PRESS_DELAY) {
+      onReact?.(message._id, "❤️");
+      setRecentReaction("❤️");
+      lastTap.current = null;
+    } else {
+      lastTap.current = now;
+    }
+
+    setTimeout(() => setRecentReaction(undefined), 1000);
   };
 
   const handleContextAction = (action: () => void) => {
@@ -236,14 +285,14 @@ const MessageItem = ({
 
   const renderMessageContent = () => (
     <View
-      className={`rounded-2xl px-4 py-2.5 ${
+      className={`rounded-3xl px-4 pt-4 pb-2 relative ${hasReactions ? "mt-3" : ""} ${
         isFromOtherUser
-          ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-sm"
-          : "bg-accent rounded-br-sm"
+          ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-none"
+          : "bg-accent rounded-br-none"
       }`}
     >
       <Text
-        className={`text-base leading-5 font-semibold ${
+        className={`text-lg leading-5 font-medium ${
           isFromOtherUser
             ? "text-secondary-800 dark:text-secondary-50"
             : "text-white"
@@ -272,34 +321,63 @@ const MessageItem = ({
           </View>
         )}
       </View>
+
+      <MessageReactionBadge
+        reactions={message.reactions}
+        className={`absolute -top-5 ${
+          isFromOtherUser ? "-right-4" : "-left-4"
+        }`}
+        animateIcon={recentReaction}
+      />
     </View>
   );
 
   const renderReactionsBar = () => {
+    const hasUserReactedWith = (emoji: string): boolean => {
+      if (!currentUser || !message.reactions) return false;
+
+      return message.reactions.some(
+        (reaction) =>
+          reaction.emoji === emoji && reaction.userId === currentUser._id,
+      );
+    };
+
     return (
       <Animated.View style={[reactionsBarAnimatedStyle]}>
         <View className="bg-white dark:bg-gray-800/90 rounded-full px-6 py-3 shadow-lg">
           <Text className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-            Tap and hold to super react
+            Tap or pick an emoji to react
           </Text>
           <View className="flex-row items-center justify-between">
-            {REACTION_EMOJIS.map((emoji, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => handleReaction(emoji)}
-                className="w-10 h-10 items-center justify-center"
-              >
-                <Text style={{ fontSize: 24 }}>{emoji}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              onPress={() => {
-                console.log("Open emoji keyboard");
+            {reactionEmojis.map((emoji, index) => {
+              const hasReacted = hasUserReactedWith(emoji);
+
+              return (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => handleReaction(emoji)}
+                  className="w-10 h-10 items-center justify-center relative"
+                >
+                  <Text style={{ fontSize: 24 }}>{emoji}</Text>
+                  {/* Dot indicator for current user's reaction */}
+                  {hasReacted && (
+                    <View
+                      className="absolute bottom-0 w-1.5 h-1.5 bg-blue-500 rounded-full"
+                      style={{ bottom: -2 }}
+                    />
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+            <EmojiPopup
+              onEmojiSelected={(selectedEmoji) => {
+                handleReaction(selectedEmoji);
               }}
-              className="w-10 h-10 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full"
             >
-              <Ionicons name="add" size={20} color={colors.text} />
-            </TouchableOpacity>
+              <TouchableOpacity className="w-10 h-10 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full">
+                <Ionicons name="add" size={20} color={colors.text} />
+              </TouchableOpacity>
+            </EmojiPopup>
           </View>
         </View>
       </Animated.View>
@@ -400,7 +478,11 @@ const MessageItem = ({
           </Link>
         )}
 
-        <Pressable onLongPress={handleLongPress} delayLongPress={300}>
+        <Pressable
+          onPress={handleDoubleTap}
+          onLongPress={handleLongPress}
+          delayLongPress={300}
+        >
           <Animated.View style={originalMessageAnimatedStyle}>
             {renderMessageContent()}
           </Animated.View>

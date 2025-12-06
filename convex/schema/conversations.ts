@@ -36,6 +36,14 @@ export const messages = defineTable({
     v.literal("delivered"),
     v.literal("read"),
   ),
+  reactions: v.optional(
+    v.array(
+      v.object({
+        emoji: v.string(),
+        userId: v.id("users"),
+      }),
+    ),
+  ),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
   deletedBy: v.optional(v.id("users")),

@@ -9,7 +9,7 @@ import {
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { ConversationId, Message } from "@/src/types/convex";
+import { ConversationId, Message, MessageId } from "@/src/types/convex";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedScrollHandler,
@@ -88,7 +88,6 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
 
       await createMessage({
         conversationId,
-        senderId: currentUser._id,
         content: encryptedContent,
         encryptionKey,
         type: "text",
@@ -132,6 +131,18 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     );
   };
 
+  const toggleReaction = useMutation(
+    api.functions.messages.toggleMessageReaction,
+  );
+
+  const handleReaction = async (messageId: MessageId, emoji: string) => {
+    try {
+      await toggleReaction({ messageId, emoji });
+    } catch (error) {
+      console.error("Failed to toggle reaction:", error);
+    }
+  };
+
   const handleBack = async () => {
     if (messages?.length === 0) {
       await executeDeleteConversation();
@@ -157,7 +168,14 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   }
 
   const renderMessage = ({ item }: { item: Message }) => {
-    return <MessageItem message={item} otherUser={otherUser} />;
+    return (
+      <MessageItem
+        message={item}
+        currentUser={currentUser}
+        otherUser={otherUser}
+        onReact={handleReaction}
+      />
+    );
   };
 
   const renderEmptyState = () => (

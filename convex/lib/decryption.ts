@@ -28,7 +28,7 @@ export const decryptMessageAction = action({
       return decrypted;
     } catch (error) {
       console.error("Backend decryption failed:", error);
-      return "New message";
+      return args.encryptedContent || "New message";
     }
   },
 });
