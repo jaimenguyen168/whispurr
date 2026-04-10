@@ -38,6 +38,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
+    null,
+  );
+
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
 
@@ -91,9 +95,12 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         content: encryptedContent,
         encryptionKey,
         type: "text",
+
+        ...(replyingToMessage && { replyToMessageId: replyingToMessage._id }),
       });
 
       setMessage("");
+      setReplyingToMessage(null);
     } catch (error) {
       console.error("Failed to send message:", error);
     } finally {
@@ -143,6 +150,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     }
   };
 
+  const handleReply = (message: Message) => {
+    setReplyingToMessage(message);
+  };
+
   const handleBack = async () => {
     if (messages?.length === 0) {
       await executeDeleteConversation();
@@ -174,6 +185,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         currentUser={currentUser}
         otherUser={otherUser}
         onReact={handleReaction}
+        onReply={handleReply}
       />
     );
   };
@@ -262,6 +274,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           onSendMessage={sendMessage}
           onAddAttachment={() => console.log("Add attachment")}
           disabled={isDeleting || isSending || hasOtherUserLeft}
+          replyingToMessage={replyingToMessage}
+          onCancelReply={() => setReplyingToMessage(null)}
+          currentUser={currentUser}
+          otherUser={otherUser}
         />
       </KeyboardAvoidingView>
     </View>

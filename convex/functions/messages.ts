@@ -15,7 +15,28 @@ export const getMessagesForConversation = query({
       .order("asc")
       .collect();
 
-    return messages ?? [];
+    return await Promise.all(
+      messages.map(async (message) => {
+        if (message.replyToMessageId) {
+          const originalMessage = await ctx.db.get(message.replyToMessageId);
+
+          if (originalMessage && !originalMessage.deletedAt) {
+            const result = {
+              ...message,
+              replyTo: {
+                _id: originalMessage._id,
+                content: originalMessage.content,
+                senderId: originalMessage.senderId,
+                encryptionKey: originalMessage.encryptionKey,
+                _creationTime: originalMessage._creationTime,
+              },
+            };
+            return result;
+          }
+        }
+        return message;
+      }),
+    );
   },
 });
 
@@ -25,9 +46,23 @@ export const createMessage = mutation({
     content: v.string(),
     type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
     encryptionKey: v.optional(v.string()),
+    replyToMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     const sender = await getAuthenticatedUser(ctx);
+
+    if (args.replyToMessageId) {
+      const originalMessage = await ctx.db.get(args.replyToMessageId);
+      if (!originalMessage) {
+        throw new Error("Message to reply to not found");
+      }
+      if (originalMessage.conversationId !== args.conversationId) {
+        throw new Error("Cannot reply to message from different conversation");
+      }
+      if (originalMessage.deletedAt) {
+        throw new Error("Cannot reply to deleted message");
+      }
+    }
 
     await ctx.runMutation(
       api.functions.conversations.unhideConversationOnMessage,
@@ -41,6 +76,7 @@ export const createMessage = mutation({
       senderId: sender._id,
       content: args.content,
       type: args.type,
+      replyToMessageId: args.replyToMessageId,
       encryptionKey: args.encryptionKey,
       status: "sent",
       updatedAt: Date.now(),

@@ -15,3 +15,15 @@ export type Message = Doc<"messages">;
 export type UserId = Id<"users">;
 export type ConversationId = Id<"conversations">;
 export type MessageId = Id<"messages">;
+
+export interface ReplyToMessage {
+  _id: MessageId;
+  content: string;
+  senderId: UserId;
+  encryptionKey?: string;
+  _creationTime: number;
+}
+
+export interface MessageWithReply extends Message {
+  replyTo?: ReplyToMessage;
+}

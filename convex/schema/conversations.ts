@@ -44,9 +44,11 @@ export const messages = defineTable({
       }),
     ),
   ),
+  replyToMessageId: v.optional(v.id("messages")),
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
   deletedBy: v.optional(v.id("users")),
 })
   .index("by_conversation", ["conversationId"])
-  .index("by_sender", ["senderId"]);
+  .index("by_sender", ["senderId"])
+  .index("by_reply_to", ["replyToMessageId"]);
