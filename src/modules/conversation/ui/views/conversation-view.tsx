@@ -25,7 +25,8 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
-import { encryptMessage } from "@/src/modules/conversation/utils";
+import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useAuth } from "@clerk/clerk-expo";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -34,6 +35,7 @@ interface ConversationViewProps {
 const HEADER_HEIGHT = 60;
 
 const ConversationView = ({ conversationId }: ConversationViewProps) => {
+  const { userId: clerkUserId } = useAuth();
   const [message, setMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -80,22 +82,22 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const createMessage = useMutation(api.functions.messages.createMessage);
 
   const sendMessage = async () => {
-    if (!message.trim() || !currentUser || isSending) return;
+    if (!message.trim() || !currentUser || isSending || !clerkUserId) return;
 
     setIsSending(true);
 
     try {
-      const { encryptedContent, encryptionKey } = await encryptMessage(
+      const { encryptedContent, iv } = await encryptMessage(
         message.trim(),
         conversationId,
+        clerkUserId,
       );
 
       await createMessage({
         conversationId,
         content: encryptedContent,
-        encryptionKey,
+        iv,
         type: "text",
-
         ...(replyingToMessage && { replyToMessageId: replyingToMessage._id }),
       });
 
@@ -184,6 +186,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         message={item}
         currentUser={currentUser}
         otherUser={otherUser}
+        conversationId={conversationId}
         onReact={handleReaction}
         onReply={handleReply}
       />

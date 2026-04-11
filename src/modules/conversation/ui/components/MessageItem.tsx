@@ -16,11 +16,13 @@ import { Message, MessageId, MessageWithReply, User } from "@/src/types/convex";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
 import { formatTime } from "@/src/utils/time";
-import { decryptMessage } from "@/src/modules/conversation/utils";
+import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
+import { useKeyReady } from "@/src/providers/KeySetupProvider";
+import { useAuth } from "@clerk/clerk-expo";
 
 interface ContextMenuOption {
   icon: string;
@@ -33,6 +35,7 @@ interface MessageItemProps {
   message: MessageWithReply;
   currentUser?: User;
   otherUser?: User;
+  conversationId: string;
   onReply?: (message: Message) => void;
   onForward?: (message: Message) => void;
   onDelete?: (messageId: string) => void;
@@ -46,6 +49,7 @@ const MessageItem = ({
   message,
   currentUser,
   otherUser,
+  conversationId,
   onReply,
   onForward,
   onDelete,
@@ -54,6 +58,7 @@ const MessageItem = ({
   onReact,
   onCopy,
 }: MessageItemProps) => {
+  const { userId: clerkUserId } = useAuth();
   const colors = useThemeColors();
   const isFromOtherUser = message.senderId === otherUser?._id;
   const messageContainerRef = useRef<View>(null);
@@ -74,6 +79,8 @@ const MessageItem = ({
   const [decryptedContent, setDecryptedContent] = useState("");
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
 
+  const { isKeyReady } = useKeyReady();
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [messageLayout, setMessageLayout] = useState({
@@ -93,35 +100,52 @@ const MessageItem = ({
 
   // Decrypt main message content
   useEffect(() => {
+    if (!isKeyReady || !clerkUserId) {
+      console.log("[MessageItem] Waiting for key setup...");
+      return;
+    }
+
     const decryptContent = async () => {
-      const decrypted = await decryptMessage(
-        message.content,
-        message.conversationId,
-        message.encryptionKey || "",
-      );
-      setDecryptedContent(decrypted);
+      try {
+        const decrypted = await decryptMessage(
+          message.content,
+          conversationId,
+          message.iv,
+          clerkUserId,
+        );
+        setDecryptedContent(decrypted);
+      } catch (error) {
+        console.error("[MessageItem] Failed to decrypt message:", error);
+        setDecryptedContent("Failed to decrypt message");
+      }
     };
 
     decryptContent();
-  }, [message]);
+  }, [message.content, message.iv, conversationId, isKeyReady, clerkUserId]);
 
   // Decrypt reply content
   useEffect(() => {
     const decryptReplyContent = async () => {
-      if (message.replyTo) {
+      if (!isKeyReady || !clerkUserId || !message.replyTo) return;
+
+      try {
         const decrypted = await decryptMessage(
           message.replyTo.content,
-          message.conversationId,
-          message.replyTo.encryptionKey || "",
+          conversationId,
+          message.replyTo.iv,
+          clerkUserId,
         );
         setDecryptedReplyContent(decrypted);
+      } catch (error) {
+        console.error("[MessageItem] Failed to decrypt reply:", error);
+        setDecryptedReplyContent("Failed to decrypt reply");
       }
     };
 
     if (message.replyTo) {
       decryptReplyContent();
     }
-  }, [message.replyTo]);
+  }, [message.replyTo, conversationId, clerkUserId, isKeyReady]);
 
   // Update reaction emojis based on user's reactions
   useEffect(() => {
@@ -176,14 +200,12 @@ const MessageItem = ({
     const targetY = screenHeight * 0.35;
     const moveUpDistance = targetY - layout.y;
 
-    // Start the animation sequence
     scale.value = withTiming(0.95, { duration: 150 });
     originalMessageOpacity.value = withTiming(0.3, { duration: 150 });
 
     setTimeout(() => {
       scale.value = withTiming(1.05, { duration: 250 });
       translateY.value = withTiming(moveUpDistance, { duration: 300 });
-
       setShowModal(true);
     }, 150);
   };
@@ -281,7 +303,6 @@ const MessageItem = ({
     }
   };
 
-  // RENDER CALLBACKS - These are passed to the modal
   const renderMessageContent = () => (
     <View
       className={`rounded-3xl px-4 pt-4 pb-2 relative ${hasReactions ? "mt-3" : ""} ${
@@ -467,7 +488,6 @@ const MessageItem = ({
         </Pressable>
       </View>
 
-      {/* Message Modal - Now uses render callbacks */}
       <MessageModal
         visible={showModal}
         message={message}

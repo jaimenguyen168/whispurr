@@ -20,6 +20,13 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import { ThemeProvider } from "@/src/providers/ThemeProvider";
 import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 
+import "react-native-get-random-values";
+import * as ExpoStandardWebCrypto from "expo-standard-web-crypto";
+import { useKeySetup } from "@/src/hooks/useKeySetup";
+import { KeySetupProvider } from "@/src/providers/KeySetupProvider";
+
+ExpoStandardWebCrypto.polyfillWebCrypto();
+
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
@@ -45,11 +52,13 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ClerkLoaded>
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <GestureHandlerRootView>
-            <ThemeProvider>
-              <RootAuthLayout />
-            </ThemeProvider>
-          </GestureHandlerRootView>
+          <KeySetupProvider>
+            <GestureHandlerRootView>
+              <ThemeProvider>
+                <RootAuthLayout />
+              </ThemeProvider>
+            </GestureHandlerRootView>
+          </KeySetupProvider>
         </ConvexProviderWithClerk>
       </ClerkLoaded>
     </ClerkProvider>
@@ -60,6 +69,7 @@ const RootAuthLayout = () => {
   const { isLoaded, isSignedIn } = useAuth();
 
   usePushNotifications(isSignedIn || false);
+  useKeySetup();
 
   if (!isLoaded) {
     return (

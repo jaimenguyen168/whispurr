@@ -27,9 +27,9 @@ export const conversationParticipants = defineTable({
 export const messages = defineTable({
   conversationId: v.id("conversations"),
   senderId: v.id("users"),
-  content: v.string(),
+  content: v.string(), // AES-256-CBC encrypted content
+  iv: v.string(), // IV for this specific message
   type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
-  encryptionKey: v.optional(v.string()),
   status: v.union(
     v.literal("sending"),
     v.literal("sent"),

@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { Message, User } from "@/src/types/convex";
-import { decryptMessage } from "@/src/modules/conversation/utils";
+import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useAuth } from "@clerk/clerk-expo";
 
 interface MessageInputProps {
   message: string;
@@ -32,17 +33,19 @@ const MessageInput = ({
   otherUser,
 }: MessageInputProps) => {
   const colors = useThemeColors();
+  const { userId: clerkUserId } = useAuth();
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
 
   // Decrypt the reply message content when replyingToMessage changes
   useEffect(() => {
     const decryptReplyContent = async () => {
-      if (replyingToMessage) {
+      if (replyingToMessage && clerkUserId) {
         try {
           const decrypted = await decryptMessage(
             replyingToMessage.content,
             replyingToMessage.conversationId,
-            replyingToMessage.encryptionKey || "",
+            replyingToMessage.iv,
+            clerkUserId,
           );
           setDecryptedReplyContent(decrypted);
         } catch (error) {
@@ -55,7 +58,7 @@ const MessageInput = ({
     };
 
     decryptReplyContent();
-  }, [replyingToMessage]);
+  }, [replyingToMessage, clerkUserId]);
 
   const getReplyToUsername = () => {
     if (!replyingToMessage || !currentUser) return "";

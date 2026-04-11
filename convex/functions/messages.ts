@@ -21,17 +21,16 @@ export const getMessagesForConversation = query({
           const originalMessage = await ctx.db.get(message.replyToMessageId);
 
           if (originalMessage && !originalMessage.deletedAt) {
-            const result = {
+            return {
               ...message,
               replyTo: {
                 _id: originalMessage._id,
                 content: originalMessage.content,
                 senderId: originalMessage.senderId,
-                encryptionKey: originalMessage.encryptionKey,
+                iv: originalMessage.iv,
                 _creationTime: originalMessage._creationTime,
               },
             };
-            return result;
           }
         }
         return message;
@@ -44,8 +43,8 @@ export const createMessage = mutation({
   args: {
     conversationId: v.id("conversations"),
     content: v.string(),
+    iv: v.string(),
     type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
-    encryptionKey: v.optional(v.string()),
     replyToMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
@@ -66,18 +65,16 @@ export const createMessage = mutation({
 
     await ctx.runMutation(
       api.functions.conversations.unhideConversationOnMessage,
-      {
-        conversationId: args.conversationId,
-      },
+      { conversationId: args.conversationId },
     );
 
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
       senderId: sender._id,
       content: args.content,
+      iv: args.iv,
       type: args.type,
       replyToMessageId: args.replyToMessageId,
-      encryptionKey: args.encryptionKey,
       status: "sent",
       updatedAt: Date.now(),
     });
@@ -86,11 +83,9 @@ export const createMessage = mutation({
       lastMessage: args.content,
       lastMessageAt: Date.now(),
       lastMessageBy: sender._id,
-      lastMessageEncryptionKey: args.encryptionKey,
       updatedAt: Date.now(),
     });
 
-    // Get active participants for this conversation
     const activeParticipants = await ctx.db
       .query("conversationParticipants")
       .withIndex("by_conversation", (q) =>
@@ -99,36 +94,27 @@ export const createMessage = mutation({
       .filter((q) => q.eq(q.field("leftAt"), undefined))
       .collect();
 
-    // Find recipient(s) - exclude sender
     const recipients = activeParticipants.filter(
       (p) => p.userId !== sender._id,
     );
 
     if (recipients.length > 0) {
-      if (sender) {
-        // Send notifications to all recipients
-        for (const recipientParticipant of recipients) {
-          const recipient = await ctx.db.get(recipientParticipant.userId);
+      for (const recipientParticipant of recipients) {
+        const recipient = await ctx.db.get(recipientParticipant.userId);
 
-          if (recipient) {
-            // Check if recipient has notifications enabled (default to true if not set)
-            const notificationsEnabled = recipient.notificationsEnabled ?? true;
+        if (recipient) {
+          const notificationsEnabled = recipient.notificationsEnabled ?? true;
 
-            // Only send notification if recipient has notifications enabled
-            if (notificationsEnabled) {
-              // Schedule push notification
-              await ctx.scheduler.runAfter(
-                0,
-                api.functions.messages.sendMessageNotification,
-                {
-                  recipientId: recipientParticipant.userId,
-                  senderName: sender.username || sender.email || "Someone",
-                  messageContent: args.content,
-                  encryptionKey: args.encryptionKey,
-                  conversationId: args.conversationId,
-                },
-              );
-            }
+          if (notificationsEnabled) {
+            await ctx.scheduler.runAfter(
+              0,
+              api.functions.messages.sendMessageNotification,
+              {
+                recipientId: recipientParticipant.userId,
+                senderName: sender.username || sender.email || "Someone",
+                conversationId: args.conversationId,
+              },
+            );
           }
         }
       }
@@ -145,22 +131,18 @@ export const deleteMessage = mutation({
   handler: async (ctx, args) => {
     const user = await getAuthenticatedUser(ctx);
 
-    // Get the message before deleting
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    // Soft delete the message
     await ctx.db.patch(args.messageId, {
       deletedAt: Date.now(),
       deletedBy: user._id,
       updatedAt: Date.now(),
     });
 
-    // Check if this was the last message in the conversation
     const conversation = await ctx.db.get(message.conversationId);
     if (!conversation) return { success: true };
 
-    // If this was the last message, find the new last message
     const newLastMessage = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
@@ -170,22 +152,18 @@ export const deleteMessage = mutation({
       .order("desc")
       .first();
 
-    // Update conversation with new last message info
     if (newLastMessage) {
       await ctx.db.patch(message.conversationId, {
         lastMessage: newLastMessage.content,
         lastMessageAt: newLastMessage.updatedAt,
         lastMessageBy: newLastMessage.senderId,
-        lastMessageEncryptionKey: newLastMessage.encryptionKey,
         updatedAt: Date.now(),
       });
     } else {
-      // No messages left, clear last message data
       await ctx.db.patch(message.conversationId, {
         lastMessage: undefined,
         lastMessageAt: undefined,
         lastMessageBy: undefined,
-        lastMessageEncryptionKey: undefined,
         updatedAt: Date.now(),
       });
     }
@@ -218,25 +196,21 @@ export const updateMessageContent = mutation({
   args: {
     messageId: v.id("messages"),
     content: v.string(),
-    encryptionKey: v.optional(v.string()),
+    iv: v.string(),
   },
   handler: async (ctx, args) => {
-    // Get the message to check if it's the last message in its conversation
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    // Update the message
     await ctx.db.patch(args.messageId, {
       content: args.content,
-      encryptionKey: args.encryptionKey,
+      iv: args.iv,
       updatedAt: Date.now(),
     });
 
-    // Check if this is the last message in the conversation
     const conversation = await ctx.db.get(message.conversationId);
     if (!conversation) return { success: true };
 
-    // Get the most recent message to see if we need to update the conversation's last message
     const lastMessage = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
@@ -246,11 +220,9 @@ export const updateMessageContent = mutation({
       .order("desc")
       .first();
 
-    // If this is the last message, update the conversation
     if (lastMessage && lastMessage._id === args.messageId) {
       await ctx.db.patch(message.conversationId, {
         lastMessage: args.content,
-        lastMessageEncryptionKey: args.encryptionKey,
         updatedAt: Date.now(),
       });
     }
@@ -282,8 +254,6 @@ export const sendMessageNotification = action({
   args: {
     recipientId: v.id("users"),
     senderName: v.string(),
-    messageContent: v.string(),
-    encryptionKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
   },
   handler: async (ctx, args): Promise<NotificationResult> => {
@@ -293,30 +263,16 @@ export const sendMessageNotification = action({
       });
 
       if (!recipient?.pushToken) {
-        console.log("No push token found for recipient");
         return { success: false, reason: "No push token" };
       }
 
       if (!recipient.notificationsEnabled) {
-        console.log("Notifications disabled for recipient");
         return { success: false, reason: "Notifications disabled" };
       }
 
-      const decryptedContent = await ctx.runAction(
-        api.lib.decryption.decryptMessageAction,
-        {
-          encryptedContent: args.messageContent,
-          conversationId: args.conversationId,
-          encryptionKey: args.encryptionKey || "",
-        },
-      );
+      // Since messages are E2E encrypted, show a generic notification body
+      const notificationBody = "New message";
 
-      const notificationBody =
-        decryptedContent.length > 50
-          ? decryptedContent.substring(0, 47) + "..."
-          : decryptedContent;
-
-      // Send push notification
       const message: PushNotificationMessage = {
         to: recipient.pushToken,
         sound: "default",
@@ -340,7 +296,6 @@ export const sendMessageNotification = action({
       });
 
       const result = await response.json();
-      console.log("Push notification sent:", result);
       return { success: true, result };
     } catch (error) {
       console.error("Error sending push notification:", error);
@@ -365,7 +320,6 @@ export const toggleMessageReaction = mutation({
 
     const currentReactions = message.reactions || [];
 
-    // Check if user already reacted with this emoji
     const existingReactionIndex = currentReactions.findIndex(
       (reaction) =>
         reaction.userId === user._id && reaction.emoji === args.emoji,
@@ -375,23 +329,16 @@ export const toggleMessageReaction = mutation({
     const isRemoving = existingReactionIndex !== -1;
 
     if (isRemoving) {
-      // Remove the existing reaction (same emoji)
       updatedReactions = currentReactions.filter(
         (_, index) => index !== existingReactionIndex,
       );
     } else {
-      // Remove any existing reaction from the user first
       const reactionsWithoutUser = currentReactions.filter(
         (reaction) => reaction.userId !== user._id,
       );
-
-      // Add the new reaction
       updatedReactions = [
         ...reactionsWithoutUser,
-        {
-          emoji: args.emoji,
-          userId: user._id,
-        },
+        { emoji: args.emoji, userId: user._id },
       ];
     }
 
@@ -400,23 +347,18 @@ export const toggleMessageReaction = mutation({
       updatedAt: Date.now(),
     });
 
-    // Send notification only when adding a reaction (not removing) and not reacting to own message
     if (!isRemoving && message.senderId !== user._id) {
-      // Get the message sender to send them a notification
       const messageSender = await ctx.db.get(message.senderId);
 
       if (messageSender && messageSender.notificationsEnabled !== false) {
-        // Reuse existing sendMessageNotification for reaction notifications
-        const reactionMessage = `${user.username || user.email || "Someone"} ${args.emoji} to your message`;
+        const reactionMessage = `${user.username || user.email || "Someone"} reacted ${args.emoji} to your message`;
 
         await ctx.scheduler.runAfter(
           0,
           api.functions.messages.sendMessageNotification,
           {
             recipientId: message.senderId,
-            senderName: user.username || user.email || "Someone",
-            messageContent: reactionMessage,
-            encryptionKey: undefined,
+            senderName: reactionMessage,
             conversationId: message.conversationId,
           },
         );

@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as functions_conversations from "../functions/conversations.js";
+import type * as functions_keys from "../functions/keys.js";
 import type * as functions_messages from "../functions/messages.js";
 import type * as functions_users from "../functions/users.js";
 import type * as http from "../http.js";
@@ -28,6 +29,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "functions/conversations": typeof functions_conversations;
+  "functions/keys": typeof functions_keys;
   "functions/messages": typeof functions_messages;
   "functions/users": typeof functions_users;
   http: typeof http;

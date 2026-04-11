@@ -20,7 +20,7 @@ export interface ReplyToMessage {
   _id: MessageId;
   content: string;
   senderId: UserId;
-  encryptionKey?: string;
+  iv: string;
   _creationTime: number;
 }
 
