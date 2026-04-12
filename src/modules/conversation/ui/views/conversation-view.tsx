@@ -9,7 +9,7 @@ import {
 import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { ConversationId, Message, MessageId } from "@/src/types/convex";
+import { ConversationId, Message } from "@/src/types/convex";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedScrollHandler,
@@ -27,6 +27,7 @@ import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
 import { useAuth } from "@clerk/clerk-expo";
+import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -39,10 +40,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const [message, setMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSending, setIsSending] = useState(false);
-
   const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
     null,
   );
+  const [forwardContent, setForwardContent] = useState<string | null>(null);
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
@@ -127,10 +128,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
       "Delete Conversation",
       `Are you sure you want to delete this conversation with ${otherUser?.username}? This action cannot be undone.`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
@@ -138,18 +136,6 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         },
       ],
     );
-  };
-
-  const toggleReaction = useMutation(
-    api.functions.messages.toggleMessageReaction,
-  );
-
-  const handleReaction = async (messageId: MessageId, emoji: string) => {
-    try {
-      await toggleReaction({ messageId, emoji });
-    } catch (error) {
-      console.error("Failed to toggle reaction:", error);
-    }
   };
 
   const handleReply = (message: Message) => {
@@ -172,7 +158,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     );
   }
 
-  if (!conversation || !otherUser || !currentUser) {
+  if (!conversation || !otherUser || !currentUser || !clerkUserId) {
     return (
       <View className="flex-1 items-center justify-center">
         <Text className="text-main">Loading...</Text>
@@ -180,18 +166,17 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     );
   }
 
-  const renderMessage = ({ item }: { item: Message }) => {
-    return (
-      <MessageItem
-        message={item}
-        currentUser={currentUser}
-        otherUser={otherUser}
-        conversationId={conversationId}
-        onReact={handleReaction}
-        onReply={handleReply}
-      />
-    );
-  };
+  const renderMessage = ({ item }: { item: Message }) => (
+    <MessageItem
+      message={item}
+      currentUser={currentUser}
+      otherUser={otherUser}
+      conversationId={conversationId}
+      clerkUserId={clerkUserId}
+      onReply={handleReply}
+      onForward={(content) => setForwardContent(content)}
+    />
+  );
 
   const renderEmptyState = () => (
     <View className="flex-1 items-center justify-center px-8">
@@ -281,8 +266,16 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           onCancelReply={() => setReplyingToMessage(null)}
           currentUser={currentUser}
           otherUser={otherUser}
+          clerkUserId={clerkUserId}
         />
       </KeyboardAvoidingView>
+
+      <ForwardMessageModal
+        visible={!!forwardContent}
+        onClose={() => setForwardContent(null)}
+        decryptedContent={forwardContent || ""}
+        clerkUserId={clerkUserId}
+      />
     </View>
   );
 };

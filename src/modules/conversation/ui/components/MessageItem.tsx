@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Pressable,
   Dimensions,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
@@ -22,7 +23,9 @@ import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
 import { useKeyReady } from "@/src/providers/KeySetupProvider";
-import { useAuth } from "@clerk/clerk-expo";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import * as Clipboard from "expo-clipboard";
 
 interface ContextMenuOption {
   icon: string;
@@ -36,13 +39,9 @@ interface MessageItemProps {
   currentUser?: User;
   otherUser?: User;
   conversationId: string;
+  clerkUserId: string;
   onReply?: (message: Message) => void;
-  onForward?: (message: Message) => void;
-  onDelete?: (messageId: string) => void;
-  onUnsend?: (messageId: string) => void;
-  onLongPress?: (message: Message) => void;
-  onReact?: (messageId: MessageId, emoji: string) => void;
-  onCopy?: (message: Message) => void;
+  onForward?: (decryptedContent: string) => void;
 }
 
 const MessageItem = ({
@@ -50,16 +49,12 @@ const MessageItem = ({
   currentUser,
   otherUser,
   conversationId,
+  clerkUserId,
   onReply,
   onForward,
-  onDelete,
-  onUnsend,
-  onLongPress,
-  onReact,
-  onCopy,
 }: MessageItemProps) => {
-  const { userId: clerkUserId } = useAuth();
   const colors = useThemeColors();
+  const { isKeyReady } = useKeyReady();
   const isFromOtherUser = message.senderId === otherUser?._id;
   const messageContainerRef = useRef<View>(null);
   const hasReactions = message.reactions && message.reactions.length > 0;
@@ -75,13 +70,9 @@ const MessageItem = ({
   const lastTap = useRef<number | null>(null);
   const DOUBLE_PRESS_DELAY = 300;
 
-  // Content state
   const [decryptedContent, setDecryptedContent] = useState("");
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
 
-  const { isKeyReady } = useKeyReady();
-
-  // Modal state
   const [showModal, setShowModal] = useState(false);
   const [messageLayout, setMessageLayout] = useState({
     x: 0,
@@ -90,7 +81,6 @@ const MessageItem = ({
     height: 0,
   });
 
-  // Animation values for modal positioning
   const scale = useSharedValue(1);
   const translateY = useSharedValue(0);
   const originalMessageOpacity = useSharedValue(1);
@@ -98,12 +88,21 @@ const MessageItem = ({
   const screenHeight = Dimensions.get("window").height;
   const screenWidth = Dimensions.get("window").width;
 
-  // Decrypt main message content
+  // ─── Convex mutations ────────────────────────────────────────────
+  const toggleReaction = useMutation(
+    api.functions.messages.toggleMessageReaction,
+  );
+  const deleteMessageMutation = useMutation(
+    api.functions.messages.deleteMessage,
+  );
+  const unsendMessageMutation = useMutation(
+    api.functions.messages.unsendMessage,
+  );
+
+  // ─── Decryption ──────────────────────────────────────────────────
+
   useEffect(() => {
-    if (!isKeyReady || !clerkUserId) {
-      console.log("[MessageItem] Waiting for key setup...");
-      return;
-    }
+    if (!isKeyReady || !clerkUserId) return;
 
     const decryptContent = async () => {
       try {
@@ -123,16 +122,15 @@ const MessageItem = ({
     decryptContent();
   }, [message.content, message.iv, conversationId, isKeyReady, clerkUserId]);
 
-  // Decrypt reply content
   useEffect(() => {
-    const decryptReplyContent = async () => {
-      if (!isKeyReady || !clerkUserId || !message.replyTo) return;
+    if (!isKeyReady || !clerkUserId || !message.replyTo) return;
 
+    const decryptReplyContent = async () => {
       try {
         const decrypted = await decryptMessage(
-          message.replyTo.content,
+          message.replyTo!.content,
           conversationId,
-          message.replyTo.iv,
+          message.replyTo!.iv,
           clerkUserId,
         );
         setDecryptedReplyContent(decrypted);
@@ -142,12 +140,11 @@ const MessageItem = ({
       }
     };
 
-    if (message.replyTo) {
-      decryptReplyContent();
-    }
+    decryptReplyContent();
   }, [message.replyTo, conversationId, clerkUserId, isKeyReady]);
 
-  // Update reaction emojis based on user's reactions
+  // ─── Reaction emojis ─────────────────────────────────────────────
+
   useEffect(() => {
     if (!currentUser || !message.reactions) return;
 
@@ -166,7 +163,53 @@ const MessageItem = ({
     });
   }, [message.reactions, currentUser, reactionEmojis]);
 
-  // Animation style for original message
+  // ─── Actions ─────────────────────────────────────────────────────
+
+  const handleReact = async (emoji: string) => {
+    try {
+      await toggleReaction({ messageId: message._id, emoji });
+    } catch (error) {
+      console.error("Failed to toggle reaction:", error);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await deleteMessageMutation({ messageId: message._id });
+    } catch (error) {
+      Alert.alert("Error", "Failed to delete message.");
+    }
+  };
+
+  const handleUnsend = () => {
+    Alert.alert(
+      "Unsend Message",
+      "This will remove the message for everyone. Continue?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Unsend",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await unsendMessageMutation({ messageId: message._id });
+            } catch (error) {
+              Alert.alert("Error", "Failed to unsend message.");
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleCopy = async () => {
+    if (decryptedContent) {
+      await Clipboard.setStringAsync(decryptedContent);
+    }
+  };
+
+  // ─── Animation ───────────────────────────────────────────────────
+
   const originalMessageAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: originalMessageOpacity.value,
@@ -192,8 +235,6 @@ const MessageItem = ({
   };
 
   const handleLongPress = async () => {
-    onLongPress?.(message);
-
     const layout = await measureMessagePosition();
     setMessageLayout(layout);
 
@@ -214,29 +255,33 @@ const MessageItem = ({
     scale.value = withTiming(1, { duration: 250 });
     translateY.value = withTiming(0, { duration: 250 });
     originalMessageOpacity.value = withTiming(1, { duration: 250 });
-
     setTimeout(() => setShowModal(false), 250);
   };
 
   const handleDoubleTap = () => {
     const now = Date.now();
     if (lastTap.current && now - lastTap.current < DOUBLE_PRESS_DELAY) {
-      onReact?.(message._id, "❤️");
+      handleReact("❤️");
       setRecentReaction("❤️");
       lastTap.current = null;
     } else {
       lastTap.current = now;
     }
-
     setTimeout(() => setRecentReaction(undefined), 1000);
   };
 
   const handleReaction = (emoji: string) => {
-    onReact?.(message._id, emoji);
+    handleReact(emoji);
     setRecentReaction(emoji);
     handleCloseModal();
-
     setTimeout(() => setRecentReaction(undefined), 1000);
+  };
+
+  const handleForward = () => {
+    handleCloseModal(); // close MessageModal first
+    setTimeout(() => {
+      onForward?.(decryptedContent);
+    }, 300);
   };
 
   const handleContextAction = (action: () => void) => {
@@ -247,13 +292,12 @@ const MessageItem = ({
   const hasUserReactedWith = (emoji: string): boolean => {
     if (!currentUser || !message.reactions) return false;
     return message.reactions.some(
-      (reaction) =>
-        reaction.emoji === emoji && reaction.userId === currentUser._id,
+      (r) => r.emoji === emoji && r.userId === currentUser._id,
     );
   };
 
-  const getContextOptions = () => {
-    const baseOptions: ContextMenuOption[] = [
+  const getContextOptions = (): ContextMenuOption[] => {
+    const options: ContextMenuOption[] = [
       {
         icon: "arrow-undo-outline",
         label: "Reply",
@@ -262,30 +306,22 @@ const MessageItem = ({
       {
         icon: "paper-plane-outline",
         label: "Forward",
-        action: () => onForward?.(message),
+        action: handleForward,
       },
-      {
-        icon: "copy-outline",
-        label: "Copy",
-        action: () => onCopy?.(message),
-      },
-      {
-        icon: "trash-outline",
-        label: "Delete for you",
-        action: () => onDelete?.(message._id),
-      },
+      { icon: "copy-outline", label: "Copy", action: handleCopy },
+      { icon: "trash-outline", label: "Delete for you", action: handleDelete },
     ];
 
     if (!isFromOtherUser) {
-      baseOptions.push({
+      options.push({
         icon: "return-up-back-outline",
         label: "Unsend",
-        action: () => onUnsend?.(message._id),
+        action: handleUnsend,
         danger: true,
       });
     }
 
-    return baseOptions;
+    return options;
   };
 
   const getStatusIcon = (status: Message["status"]) => {
@@ -303,6 +339,8 @@ const MessageItem = ({
     }
   };
 
+  // ─── Render ──────────────────────────────────────────────────────
+
   const renderMessageContent = () => (
     <View
       className={`rounded-3xl px-4 pt-4 pb-2 relative ${hasReactions ? "mt-3" : ""} ${
@@ -311,7 +349,6 @@ const MessageItem = ({
           : "bg-accent rounded-br-none"
       }`}
     >
-      {/* Reply Preview */}
       {message.replyTo && decryptedReplyContent && (
         <View
           className={`mb-3 p-2 rounded-lg border-l-2 ${
@@ -346,7 +383,6 @@ const MessageItem = ({
         </View>
       )}
 
-      {/* Main Message Content */}
       <Text
         className={`text-lg leading-5 font-medium ${
           isFromOtherUser
@@ -380,9 +416,7 @@ const MessageItem = ({
 
       <MessageReactionBadge
         reactions={message.reactions}
-        className={`absolute -top-5 ${
-          isFromOtherUser ? "-right-4" : "-left-4"
-        }`}
+        className={`absolute -top-5 ${isFromOtherUser ? "-right-4" : "-left-4"}`}
         animateIcon={recentReaction}
       />
     </View>
@@ -394,30 +428,22 @@ const MessageItem = ({
         Tap or pick an emoji to react
       </Text>
       <View className="flex-row items-center justify-between">
-        {reactionEmojis.map((emoji, index) => {
-          const hasReacted = hasUserReactedWith(emoji);
-
-          return (
-            <TouchableOpacity
-              key={index}
-              onPress={() => handleReaction(emoji)}
-              className="w-10 h-10 items-center justify-center relative"
-            >
-              <Text style={{ fontSize: 24 }}>{emoji}</Text>
-              {hasReacted && (
-                <View
-                  className="absolute bottom-0 w-1.5 h-1.5 bg-blue-500 rounded-full"
-                  style={{ bottom: -2 }}
-                />
-              )}
-            </TouchableOpacity>
-          );
-        })}
-        <EmojiPopup
-          onEmojiSelected={(selectedEmoji) => {
-            handleReaction(selectedEmoji);
-          }}
-        >
+        {reactionEmojis.map((emoji, index) => (
+          <TouchableOpacity
+            key={index}
+            onPress={() => handleReaction(emoji)}
+            className="w-10 h-10 items-center justify-center relative"
+          >
+            <Text style={{ fontSize: 24 }}>{emoji}</Text>
+            {hasUserReactedWith(emoji) && (
+              <View
+                className="absolute bottom-0 w-1.5 h-1.5 bg-blue-500 rounded-full"
+                style={{ bottom: -2 }}
+              />
+            )}
+          </TouchableOpacity>
+        ))}
+        <EmojiPopup onEmojiSelected={handleReaction}>
           <TouchableOpacity className="w-10 h-10 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-full">
             <Ionicons name="add" size={20} color={colors.text} />
           </TouchableOpacity>
@@ -458,7 +484,11 @@ const MessageItem = ({
     <>
       <View
         ref={messageContainerRef}
-        className={`px-4 ${isFromOtherUser ? "items-start mr-24 flex-row gap-2" : "items-end ml-24"}`}
+        className={`px-4 ${
+          isFromOtherUser
+            ? "items-start mr-24 flex-row gap-2"
+            : "items-end ml-24"
+        }`}
       >
         {isFromOtherUser && (
           <Link href={"/profile"} asChild>
@@ -498,7 +528,7 @@ const MessageItem = ({
         scale={scale}
         translateY={translateY}
         onClose={handleCloseModal}
-        onReact={onReact}
+        onReact={(messageId: MessageId, emoji: string) => handleReact(emoji)}
         renderMessageContent={renderMessageContent}
         renderReactionsBar={renderReactionsBar}
         renderContextMenu={renderContextMenu}

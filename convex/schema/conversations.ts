@@ -48,6 +48,7 @@ export const messages = defineTable({
   updatedAt: v.number(),
   deletedAt: v.optional(v.number()),
   deletedBy: v.optional(v.id("users")),
+  deletedFor: v.optional(v.union(v.literal("sender"), v.literal("all"))),
 })
   .index("by_conversation", ["conversationId"])
   .index("by_sender", ["senderId"])

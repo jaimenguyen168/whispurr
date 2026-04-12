@@ -6,12 +6,23 @@ import { getAuthenticatedUser } from "../utils";
 export const getMessagesForConversation = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
         q.eq("conversationId", args.conversationId),
       )
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("deletedAt"), undefined),
+          q.and(
+            q.neq(q.field("deletedAt"), undefined),
+            q.eq(q.field("deletedFor"), "sender"),
+            q.neq(q.field("senderId"), user._id),
+          ),
+        ),
+      )
       .order("asc")
       .collect();
 
@@ -138,6 +149,7 @@ export const deleteMessage = mutation({
       deletedAt: Date.now(),
       deletedBy: user._id,
       updatedAt: Date.now(),
+      deletedFor: "sender",
     });
 
     const conversation = await ctx.db.get(message.conversationId);
@@ -226,6 +238,27 @@ export const updateMessageContent = mutation({
         updatedAt: Date.now(),
       });
     }
+
+    return { success: true };
+  },
+});
+
+export const unsendMessage = mutation({
+  args: { messageId: v.id("messages") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+    const message = await ctx.db.get(args.messageId);
+
+    if (!message) throw new Error("Message not found");
+    if (message.senderId !== user._id)
+      throw new Error("Can only unsend your own messages");
+
+    await ctx.db.patch(args.messageId, {
+      deletedAt: Date.now(),
+      deletedBy: user._id,
+      deletedFor: "all",
+      updatedAt: Date.now(),
+    });
 
     return { success: true };
   },

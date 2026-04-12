@@ -4,7 +4,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { Message, User } from "@/src/types/convex";
 import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
-import { useAuth } from "@clerk/clerk-expo";
 
 interface MessageInputProps {
   message: string;
@@ -13,11 +12,11 @@ interface MessageInputProps {
   onAddAttachment?: () => void;
   placeholder?: string;
   disabled?: boolean;
-  // Add these new props for reply functionality
   replyingToMessage?: Message | null;
   onCancelReply?: () => void;
   currentUser?: User;
   otherUser?: User;
+  clerkUserId: string;
 }
 
 const MessageInput = ({
@@ -31,12 +30,11 @@ const MessageInput = ({
   onCancelReply,
   currentUser,
   otherUser,
+  clerkUserId,
 }: MessageInputProps) => {
   const colors = useThemeColors();
-  const { userId: clerkUserId } = useAuth();
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
 
-  // Decrypt the reply message content when replyingToMessage changes
   useEffect(() => {
     const decryptReplyContent = async () => {
       if (replyingToMessage && clerkUserId) {

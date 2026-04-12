@@ -208,7 +208,7 @@ const ConversationItem = ({
         onSwipeableOpen={onSwipeableOpen}
       >
         <TouchableOpacity
-          className="flex-row items-center py-3 px-6 bg-transparent"
+          className="flex-row items-center py-2 px-6 bg-transparent"
           activeOpacity={0.7}
           onPress={() => router.push(`/(chat)/${conversation._id}`)}
         >
