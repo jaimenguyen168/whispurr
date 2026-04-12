@@ -5,7 +5,7 @@ import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import { Image } from "expo-image";
 import { formatTime } from "@/src/utils/time";
-import { Conversation } from "@/src/types/convex";
+import { ConversationWithDetails } from "@/src/types/convex";
 import ReanimatedSwipeable, {
   SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
@@ -18,11 +18,13 @@ import Reanimated, {
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import SwipeAction from "@/src/components/SwipeAction";
-import { decryptMessage } from "@/src/modules/conversation/utils"; // Add this import
+import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useKeyReady } from "@/src/providers/KeySetupProvider";
 
 interface ConversationItemProps {
-  conversation: Conversation;
+  conversation: ConversationWithDetails;
   currentUserId: string;
+  clerkUserId: string;
 }
 
 const THRESHOLD = 50;
@@ -30,54 +32,81 @@ const THRESHOLD = 50;
 const ConversationItem = ({
   conversation,
   currentUserId,
+  clerkUserId,
 }: ConversationItemProps) => {
   const reanimatedRef = useRef<SwipeableMethods>(null);
   const heightAnim = useSharedValue(80);
   const opacityAnim = useSharedValue(1);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [decryptedLastMessage, setDecryptedLastMessage] = useState(""); // Add this state
+  const [decryptedLastMessage, setDecryptedLastMessage] = useState("");
 
-  const otherParticipantId = conversation.participantIds?.find(
-    (participantId) => participantId !== currentUserId,
+  const { isKeyReady } = useKeyReady();
+
+  const otherParticipantRecord = conversation.allParticipants?.find(
+    (participant) => participant.userId !== currentUserId,
   );
+  const otherParticipantId = otherParticipantRecord?.userId;
 
   const otherParticipant = useQuery(
     api.functions.users.getUserById,
     otherParticipantId ? { userId: otherParticipantId } : "skip",
   );
 
+  // Fetch the last message to get its iv
+  const messages = useQuery(api.functions.messages.getMessagesForConversation, {
+    conversationId: conversation._id,
+  });
+  const lastMessage = messages?.[messages.length - 1];
+
   const deleteConversation = useMutation(
-    api.functions.conversations.deleteConversation,
+    api.functions.conversations.leaveConversation,
   );
 
-  // Add useEffect to decrypt the last message
   useEffect(() => {
     const decryptLastMessage = async () => {
-      if (conversation.lastMessage && conversation.lastMessageEncryptionKey) {
-        try {
-          const decrypted = await decryptMessage(
-            conversation.lastMessage,
-            conversation._id,
-            conversation.lastMessageEncryptionKey,
-          );
-          setDecryptedLastMessage(decrypted);
-        } catch (error) {
-          console.error("Failed to decrypt last message:", error);
-          setDecryptedLastMessage("Unable to decrypt message");
-        }
-      } else if (conversation.lastMessage) {
-        // If there's a last message but no encryption key, assume it's unencrypted
-        setDecryptedLastMessage(conversation.lastMessage);
-      } else {
+      if (!isKeyReady) {
+        console.log("[ConversationItem] Waiting for key setup...");
+        return;
+      }
+
+      if (!lastMessage?.content || !lastMessage?.iv) {
+        console.log("[ConversationItem] No last message or iv:", {
+          hasContent: !!lastMessage?.content,
+          hasIv: !!lastMessage?.iv,
+          lastMessage,
+        });
         setDecryptedLastMessage("");
+        return;
+      }
+
+      try {
+        console.log("[ConversationItem] Attempting decrypt:", {
+          conversationId: conversation._id,
+          iv: lastMessage.iv,
+          contentPreview: lastMessage.content.slice(0, 20),
+        });
+        const decrypted = await decryptMessage(
+          lastMessage.content,
+          conversation._id,
+          lastMessage.iv,
+          clerkUserId,
+        );
+        console.log("[ConversationItem] Decrypted:", decrypted);
+        setDecryptedLastMessage(decrypted);
+      } catch (error) {
+        console.error("[ConversationItem] Decrypt error:", error);
+        setDecryptedLastMessage("Unable to decrypt message");
       }
     };
 
     decryptLastMessage();
   }, [
-    conversation.lastMessage,
-    conversation.lastMessageEncryptionKey,
+    lastMessage?._id,
+    lastMessage?.iv,
     conversation._id,
+    isKeyReady,
+    clerkUserId,
+    lastMessage,
   ]);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -179,7 +208,7 @@ const ConversationItem = ({
         onSwipeableOpen={onSwipeableOpen}
       >
         <TouchableOpacity
-          className="flex-row items-center py-3 px-6 bg-transparent"
+          className="flex-row items-center py-2 px-6 bg-transparent"
           activeOpacity={0.7}
           onPress={() => router.push(`/(chat)/${conversation._id}`)}
         >

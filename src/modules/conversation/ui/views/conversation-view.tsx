@@ -25,7 +25,9 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
-import { encryptMessage } from "@/src/modules/conversation/utils";
+import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useAuth } from "@clerk/clerk-expo";
+import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -34,8 +36,14 @@ interface ConversationViewProps {
 const HEADER_HEIGHT = 60;
 
 const ConversationView = ({ conversationId }: ConversationViewProps) => {
+  const { userId: clerkUserId } = useAuth();
   const [message, setMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [replyingToMessage, setReplyingToMessage] = useState<Message | null>(
+    null,
+  );
+  const [forwardContent, setForwardContent] = useState<string | null>(null);
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
@@ -50,8 +58,9 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     api.functions.conversations.getConversationById,
     isDeleting ? "skip" : { conversationId },
   );
+
   const deleteConversation = useMutation(
-    api.functions.conversations.deleteConversation,
+    api.functions.conversations.leaveConversation,
   );
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
@@ -61,6 +70,11 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     isDeleting ? "skip" : { conversationId },
   );
 
+  const otherUserParticipant = conversation?.allParticipants?.find(
+    (participant) => participant.userId !== currentUser?._id,
+  );
+  const hasOtherUserLeft = otherUserParticipant?.leftAt !== undefined;
+
   const messages = useQuery(
     api.functions.messages.getMessagesForConversation,
     isDeleting ? "skip" : { conversationId },
@@ -69,25 +83,31 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const createMessage = useMutation(api.functions.messages.createMessage);
 
   const sendMessage = async () => {
-    if (!message.trim() || !currentUser) return;
+    if (!message.trim() || !currentUser || isSending || !clerkUserId) return;
+
+    setIsSending(true);
 
     try {
-      const { encryptedContent, encryptionKey } = await encryptMessage(
+      const { encryptedContent, iv } = await encryptMessage(
         message.trim(),
         conversationId,
+        clerkUserId,
       );
 
       await createMessage({
         conversationId,
-        senderId: currentUser._id,
         content: encryptedContent,
-        encryptionKey: encryptionKey,
+        iv,
         type: "text",
+        ...(replyingToMessage && { replyToMessageId: replyingToMessage._id }),
       });
 
       setMessage("");
+      setReplyingToMessage(null);
     } catch (error) {
       console.error("Failed to send message:", error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -108,10 +128,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
       "Delete Conversation",
       `Are you sure you want to delete this conversation with ${otherUser?.username}? This action cannot be undone.`,
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
@@ -119,6 +136,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         },
       ],
     );
+  };
+
+  const handleReply = (message: Message) => {
+    setReplyingToMessage(message);
   };
 
   const handleBack = async () => {
@@ -137,7 +158,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     );
   }
 
-  if (!conversation || !otherUser || !currentUser) {
+  if (!conversation || !otherUser || !currentUser || !clerkUserId) {
     return (
       <View className="flex-1 items-center justify-center">
         <Text className="text-main">Loading...</Text>
@@ -145,9 +166,17 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     );
   }
 
-  const renderMessage = ({ item }: { item: Message }) => {
-    return <MessageItem message={item} otherUser={otherUser} />;
-  };
+  const renderMessage = ({ item }: { item: Message }) => (
+    <MessageItem
+      message={item}
+      currentUser={currentUser}
+      otherUser={otherUser}
+      conversationId={conversationId}
+      clerkUserId={clerkUserId}
+      onReply={handleReply}
+      onForward={(content) => setForwardContent(content)}
+    />
+  );
 
   const renderEmptyState = () => (
     <View className="flex-1 items-center justify-center px-8">
@@ -216,6 +245,15 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
           />
+
+          {hasOtherUserLeft && (
+            <View className="bg-surface px-4 py-3 border-t border-soft">
+              <Text className="text-secondary text-center text-sm">
+                {otherUser.username} has left this conversation. You can no
+                longer send messages.
+              </Text>
+            </View>
+          )}
         </View>
 
         <MessageInput
@@ -223,9 +261,21 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           onMessageChange={setMessage}
           onSendMessage={sendMessage}
           onAddAttachment={() => console.log("Add attachment")}
-          disabled={isDeleting}
+          disabled={isDeleting || isSending || hasOtherUserLeft}
+          replyingToMessage={replyingToMessage}
+          onCancelReply={() => setReplyingToMessage(null)}
+          currentUser={currentUser}
+          otherUser={otherUser}
+          clerkUserId={clerkUserId}
         />
       </KeyboardAvoidingView>
+
+      <ForwardMessageModal
+        visible={!!forwardContent}
+        onClose={() => setForwardContent(null)}
+        decryptedContent={forwardContent || ""}
+        clerkUserId={clerkUserId}
+      />
     </View>
   );
 };

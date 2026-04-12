@@ -1,36 +1,91 @@
 import { action, mutation, query } from "../_generated/server";
 import { v } from "convex/values";
 import { api } from "../_generated/api";
+import { getAuthenticatedUser } from "../utils";
 
 export const getMessagesForConversation = query({
   args: { conversationId: v.id("conversations") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const user = await getAuthenticatedUser(ctx);
+
+    const messages = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
         q.eq("conversationId", args.conversationId),
       )
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("deletedAt"), undefined),
+          q.and(
+            q.neq(q.field("deletedAt"), undefined),
+            q.eq(q.field("deletedFor"), "sender"),
+            q.neq(q.field("senderId"), user._id),
+          ),
+        ),
+      )
       .order("asc")
       .collect();
+
+    return await Promise.all(
+      messages.map(async (message) => {
+        if (message.replyToMessageId) {
+          const originalMessage = await ctx.db.get(message.replyToMessageId);
+
+          if (originalMessage && !originalMessage.deletedAt) {
+            return {
+              ...message,
+              replyTo: {
+                _id: originalMessage._id,
+                content: originalMessage.content,
+                senderId: originalMessage.senderId,
+                iv: originalMessage.iv,
+                _creationTime: originalMessage._creationTime,
+              },
+            };
+          }
+        }
+        return message;
+      }),
+    );
   },
 });
 
 export const createMessage = mutation({
   args: {
     conversationId: v.id("conversations"),
-    senderId: v.id("users"),
     content: v.string(),
+    iv: v.string(),
     type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
-    encryptionKey: v.optional(v.string()),
+    replyToMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
+    const sender = await getAuthenticatedUser(ctx);
+
+    if (args.replyToMessageId) {
+      const originalMessage = await ctx.db.get(args.replyToMessageId);
+      if (!originalMessage) {
+        throw new Error("Message to reply to not found");
+      }
+      if (originalMessage.conversationId !== args.conversationId) {
+        throw new Error("Cannot reply to message from different conversation");
+      }
+      if (originalMessage.deletedAt) {
+        throw new Error("Cannot reply to deleted message");
+      }
+    }
+
+    await ctx.runMutation(
+      api.functions.conversations.unhideConversationOnMessage,
+      { conversationId: args.conversationId },
+    );
+
     const messageId = await ctx.db.insert("messages", {
       conversationId: args.conversationId,
-      senderId: args.senderId,
+      senderId: sender._id,
       content: args.content,
+      iv: args.iv,
       type: args.type,
-      encryptionKey: args.encryptionKey,
+      replyToMessageId: args.replyToMessageId,
       status: "sent",
       updatedAt: Date.now(),
     });
@@ -38,38 +93,36 @@ export const createMessage = mutation({
     await ctx.db.patch(args.conversationId, {
       lastMessage: args.content,
       lastMessageAt: Date.now(),
-      lastMessageBy: args.senderId,
-      lastMessageEncryptionKey: args.encryptionKey,
+      lastMessageBy: sender._id,
       updatedAt: Date.now(),
     });
 
-    // Get conversation to find recipient
-    const conversation = await ctx.db.get(args.conversationId);
-    if (conversation) {
-      const recipientId = conversation.participantIds.find(
-        (id) => id !== args.senderId,
-      );
+    const activeParticipants = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", args.conversationId),
+      )
+      .filter((q) => q.eq(q.field("leftAt"), undefined))
+      .collect();
 
-      if (recipientId) {
-        // Get sender info
-        const sender = await ctx.db.get(args.senderId);
-        const recipient = await ctx.db.get(recipientId);
+    const recipients = activeParticipants.filter(
+      (p) => p.userId !== sender._id,
+    );
 
-        if (sender && recipient) {
-          // Check if recipient has notifications enabled (default to true if not set)
+    if (recipients.length > 0) {
+      for (const recipientParticipant of recipients) {
+        const recipient = await ctx.db.get(recipientParticipant.userId);
+
+        if (recipient) {
           const notificationsEnabled = recipient.notificationsEnabled ?? true;
 
-          // Only send notification if recipient has notifications enabled
           if (notificationsEnabled) {
-            // Schedule push notification
             await ctx.scheduler.runAfter(
               0,
               api.functions.messages.sendMessageNotification,
               {
-                recipientId,
+                recipientId: recipientParticipant.userId,
                 senderName: sender.username || sender.email || "Someone",
-                messageContent: args.content, // Pass encrypted content
-                encryptionKey: args.encryptionKey, // Pass the encryption key
                 conversationId: args.conversationId,
               },
             );
@@ -79,6 +132,55 @@ export const createMessage = mutation({
     }
 
     return messageId;
+  },
+});
+
+export const deleteMessage = mutation({
+  args: {
+    messageId: v.id("messages"),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    await ctx.db.patch(args.messageId, {
+      deletedAt: Date.now(),
+      deletedBy: user._id,
+      updatedAt: Date.now(),
+      deletedFor: "sender",
+    });
+
+    const conversation = await ctx.db.get(message.conversationId);
+    if (!conversation) return { success: true };
+
+    const newLastMessage = await ctx.db
+      .query("messages")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", message.conversationId),
+      )
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .order("desc")
+      .first();
+
+    if (newLastMessage) {
+      await ctx.db.patch(message.conversationId, {
+        lastMessage: newLastMessage.content,
+        lastMessageAt: newLastMessage.updatedAt,
+        lastMessageBy: newLastMessage.senderId,
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.patch(message.conversationId, {
+        lastMessage: undefined,
+        lastMessageAt: undefined,
+        lastMessageBy: undefined,
+        updatedAt: Date.now(),
+      });
+    }
+
+    return { success: true };
   },
 });
 
@@ -106,25 +208,21 @@ export const updateMessageContent = mutation({
   args: {
     messageId: v.id("messages"),
     content: v.string(),
-    encryptionKey: v.optional(v.string()),
+    iv: v.string(),
   },
   handler: async (ctx, args) => {
-    // Get the message to check if it's the last message in its conversation
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    // Update the message
     await ctx.db.patch(args.messageId, {
       content: args.content,
-      encryptionKey: args.encryptionKey,
+      iv: args.iv,
       updatedAt: Date.now(),
     });
 
-    // Check if this is the last message in the conversation
     const conversation = await ctx.db.get(message.conversationId);
     if (!conversation) return { success: true };
 
-    // Get the most recent message to see if we need to update the conversation's last message
     const lastMessage = await ctx.db
       .query("messages")
       .withIndex("by_conversation", (q) =>
@@ -134,11 +232,9 @@ export const updateMessageContent = mutation({
       .order("desc")
       .first();
 
-    // If this is the last message, update the conversation
     if (lastMessage && lastMessage._id === args.messageId) {
       await ctx.db.patch(message.conversationId, {
         lastMessage: args.content,
-        lastMessageEncryptionKey: args.encryptionKey,
         updatedAt: Date.now(),
       });
     }
@@ -147,56 +243,22 @@ export const updateMessageContent = mutation({
   },
 });
 
-export const deleteMessage = mutation({
-  args: {
-    messageId: v.id("messages"),
-    deletedBy: v.id("users"),
-  },
+export const unsendMessage = mutation({
+  args: { messageId: v.id("messages") },
   handler: async (ctx, args) => {
-    // Get the message before deleting
+    const user = await getAuthenticatedUser(ctx);
     const message = await ctx.db.get(args.messageId);
-    if (!message) throw new Error("Message not found");
 
-    // Soft delete the message
+    if (!message) throw new Error("Message not found");
+    if (message.senderId !== user._id)
+      throw new Error("Can only unsend your own messages");
+
     await ctx.db.patch(args.messageId, {
       deletedAt: Date.now(),
-      deletedBy: args.deletedBy,
+      deletedBy: user._id,
+      deletedFor: "all",
       updatedAt: Date.now(),
     });
-
-    // Check if this was the last message in the conversation
-    const conversation = await ctx.db.get(message.conversationId);
-    if (!conversation) return { success: true };
-
-    // If this was the last message, find the new last message
-    const newLastMessage = await ctx.db
-      .query("messages")
-      .withIndex("by_conversation", (q) =>
-        q.eq("conversationId", message.conversationId),
-      )
-      .filter((q) => q.eq(q.field("deletedAt"), undefined))
-      .order("desc")
-      .first();
-
-    // Update conversation with new last message info
-    if (newLastMessage) {
-      await ctx.db.patch(message.conversationId, {
-        lastMessage: newLastMessage.content,
-        lastMessageAt: newLastMessage.updatedAt,
-        lastMessageBy: newLastMessage.senderId,
-        lastMessageEncryptionKey: newLastMessage.encryptionKey,
-        updatedAt: Date.now(),
-      });
-    } else {
-      // No messages left, clear last message data
-      await ctx.db.patch(message.conversationId, {
-        lastMessage: undefined,
-        lastMessageAt: undefined,
-        lastMessageBy: undefined,
-        lastMessageEncryptionKey: undefined,
-        updatedAt: Date.now(),
-      });
-    }
 
     return { success: true };
   },
@@ -225,37 +287,25 @@ export const sendMessageNotification = action({
   args: {
     recipientId: v.id("users"),
     senderName: v.string(),
-    messageContent: v.string(),
-    encryptionKey: v.optional(v.string()),
     conversationId: v.id("conversations"),
   },
   handler: async (ctx, args): Promise<NotificationResult> => {
     try {
-      // Get recipient's push token
       const recipient = await ctx.runQuery(api.functions.users.getUserById, {
         userId: args.recipientId,
       });
 
       if (!recipient?.pushToken) {
-        console.log("No push token found for recipient");
         return { success: false, reason: "No push token" };
       }
 
-      const decryptedContent = await ctx.runAction(
-        api.lib.decryption.decryptMessageAction,
-        {
-          encryptedContent: args.messageContent,
-          conversationId: args.conversationId,
-          encryptionKey: args.encryptionKey || "",
-        },
-      );
+      if (!recipient.notificationsEnabled) {
+        return { success: false, reason: "Notifications disabled" };
+      }
 
-      const notificationBody =
-        decryptedContent.length > 50
-          ? decryptedContent.substring(0, 47) + "..."
-          : decryptedContent;
+      // Since messages are E2E encrypted, show a generic notification body
+      const notificationBody = "New message";
 
-      // Send push notification
       const message: PushNotificationMessage = {
         to: recipient.pushToken,
         sound: "default",
@@ -279,7 +329,6 @@ export const sendMessageNotification = action({
       });
 
       const result = await response.json();
-      console.log("Push notification sent:", result);
       return { success: true, result };
     } catch (error) {
       console.error("Error sending push notification:", error);
@@ -288,5 +337,67 @@ export const sendMessageNotification = action({
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  },
+});
+
+export const toggleMessageReaction = mutation({
+  args: {
+    messageId: v.id("messages"),
+    emoji: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const message = await ctx.db.get(args.messageId);
+    if (!message) throw new Error("Message not found");
+
+    const currentReactions = message.reactions || [];
+
+    const existingReactionIndex = currentReactions.findIndex(
+      (reaction) =>
+        reaction.userId === user._id && reaction.emoji === args.emoji,
+    );
+
+    let updatedReactions;
+    const isRemoving = existingReactionIndex !== -1;
+
+    if (isRemoving) {
+      updatedReactions = currentReactions.filter(
+        (_, index) => index !== existingReactionIndex,
+      );
+    } else {
+      const reactionsWithoutUser = currentReactions.filter(
+        (reaction) => reaction.userId !== user._id,
+      );
+      updatedReactions = [
+        ...reactionsWithoutUser,
+        { emoji: args.emoji, userId: user._id },
+      ];
+    }
+
+    await ctx.db.patch(args.messageId, {
+      reactions: updatedReactions,
+      updatedAt: Date.now(),
+    });
+
+    if (!isRemoving && message.senderId !== user._id) {
+      const messageSender = await ctx.db.get(message.senderId);
+
+      if (messageSender && messageSender.notificationsEnabled !== false) {
+        const reactionMessage = `${user.username || user.email || "Someone"} reacted ${args.emoji} to your message`;
+
+        await ctx.scheduler.runAfter(
+          0,
+          api.functions.messages.sendMessageNotification,
+          {
+            recipientId: message.senderId,
+            senderName: reactionMessage,
+            conversationId: message.conversationId,
+          },
+        );
+      }
+    }
+
+    return { success: true, removed: isRemoving };
   },
 });

@@ -9,7 +9,7 @@ import { router } from "expo-router";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    // shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -66,18 +66,22 @@ async function registerForPushNotificationsAsync() {
   return token?.data;
 }
 
-export const usePushNotifications = (currentUser: any) => {
+export const usePushNotifications = (isSignedIn: boolean) => {
   // Fixed: Use generic type instead of deprecated Subscription
   const notificationListener = useRef<{ remove: () => void } | null>(null);
   const responseListener = useRef<{ remove: () => void } | null>(null);
   const updatePushToken = useMutation(api.functions.users.updatePushToken);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!isSignedIn) return;
+
+    console.log("user is signed in");
 
     // Register for push notifications
     registerForPushNotificationsAsync().then((token) => {
       if (token) {
+        console.log("Update push token");
+
         updatePushToken({
           pushToken: token,
         }).catch((error) => {
@@ -116,5 +120,5 @@ export const usePushNotifications = (currentUser: any) => {
       notificationListener.current?.remove();
       responseListener.current?.remove();
     };
-  }, [currentUser, updatePushToken]);
+  }, [isSignedIn, updatePushToken]);
 };

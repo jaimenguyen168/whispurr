@@ -14,13 +14,15 @@ import {
   ChatsHeader1,
   ChatsHeader2,
 } from "@/src/modules/chats/ui/components/ChatsHeaders";
-import { Conversation } from "@/src/types/convex";
+import { ConversationWithDetails } from "@/src/types/convex";
 import ConversationItem from "@/src/modules/chats/ui/components/ConversationItem";
+import { useAuth } from "@clerk/clerk-expo";
 
 const HEADER_HEIGHT = 60;
 
 const ChatsView = () => {
   const insets = useSafeAreaInsets();
+  const { userId } = useAuth();
   const scrollOffset = useSharedValue(0);
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -39,9 +41,17 @@ const ChatsView = () => {
     return <ConversationsLoading />;
   }
 
-  const renderConversationItem = ({ item }: { item: Conversation }) => {
+  const renderConversationItem = ({
+    item,
+  }: {
+    item: ConversationWithDetails;
+  }) => {
     return (
-      <ConversationItem conversation={item} currentUserId={currentUser._id} />
+      <ConversationItem
+        conversation={item}
+        currentUserId={currentUser._id}
+        clerkUserId={userId!}
+      />
     );
   };
 

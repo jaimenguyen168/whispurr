@@ -12,6 +12,7 @@ export const getCurrentUser = query({
     return {
       ...currentUser,
       imageUrl,
+      notificationsEnabled: currentUser.notificationsEnabled ?? true, // Default to true
     };
   },
 });
@@ -32,6 +33,7 @@ export const getUserById = query({
     return {
       ...user,
       imageUrl,
+      notificationsEnabled: user.notificationsEnabled ?? true, // Default to true
     };
   },
 });
@@ -52,6 +54,7 @@ export const getUsers = query({
         return {
           ...user,
           imageUrl,
+          notificationsEnabled: user.notificationsEnabled ?? true, // Default to true
         };
       }),
     );
@@ -63,24 +66,31 @@ export const getOtherUserByConversationId = query({
   handler: async (ctx, args) => {
     const currentUser = await getAuthenticatedUser(ctx);
 
-    const conversation = await ctx.db.get(args.conversationId);
-    if (!conversation) {
-      throw new Error("Conversation not found");
-    }
+    // Get ALL participants in this conversation (including those who left)
+    const allParticipants = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", args.conversationId),
+      )
+      .collect();
 
-    if (!conversation.participantIds.includes(currentUser._id)) {
-      throw new Error("User is not a participant in this conversation");
-    }
-
-    const otherUserId = conversation.participantIds.find(
-      (id) => id !== currentUser._id,
+    // Verify current user is a participant (and hasn't left)
+    const currentUserParticipant = allParticipants.find(
+      (p) => p.userId === currentUser._id && !p.leftAt,
     );
+    if (!currentUserParticipant) {
+      throw new Error("User is not an active participant in this conversation");
+    }
 
-    if (!otherUserId) {
+    // Find the other user (regardless of whether they left)
+    const otherUserParticipant = allParticipants.find(
+      (p) => p.userId !== currentUser._id,
+    );
+    if (!otherUserParticipant) {
       throw new Error("No other user found in this conversation");
     }
 
-    const otherUser = await ctx.db.get(otherUserId);
+    const otherUser = await ctx.db.get(otherUserParticipant.userId);
     if (!otherUser) {
       throw new Error("Other user not found");
     }
@@ -90,6 +100,8 @@ export const getOtherUserByConversationId = query({
     return {
       ...otherUser,
       imageUrl,
+      notificationsEnabled: otherUser.notificationsEnabled ?? true, // Default to true
+      participantInfo: otherUserParticipant, // Include join/leave info
     };
   },
 });
@@ -151,6 +163,22 @@ export const updatePushToken = mutation({
   },
 });
 
+export const updateNotificationPreference = mutation({
+  args: {
+    notificationsEnabled: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    await ctx.db.patch(user._id, {
+      notificationsEnabled: args.notificationsEnabled,
+      updatedAt: Date.now(),
+    });
+
+    return { success: true };
+  },
+});
+
 export const getUserPushToken = query({
   args: {
     userId: v.id("users"),
@@ -167,19 +195,17 @@ export const getUserNotificationPreference = query({
   },
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
-    return user?.notificationsEnabled ?? true;
+    return user?.notificationsEnabled ?? true; // Default to true if not set
   },
 });
 
-export const updateNotificationPreference = mutation({
-  args: {
-    notificationsEnabled: v.boolean(),
-  },
-  handler: async (ctx, args) => {
+export const clearPushToken = mutation({
+  args: {},
+  handler: async (ctx) => {
     const user = await getAuthenticatedUser(ctx);
 
     await ctx.db.patch(user._id, {
-      notificationsEnabled: args.notificationsEnabled,
+      pushToken: undefined,
       updatedAt: Date.now(),
     });
 

@@ -11,15 +11,21 @@ import {
   Nunito_700Bold,
   Nunito_800ExtraBold,
 } from "@expo-google-fonts/nunito";
-import { ConvexProvider, ConvexReactClient, useQuery } from "convex/react";
+import { ConvexReactClient } from "convex/react";
 import { ActivityIndicator, View } from "react-native";
 import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { tokenCache } from "@clerk/clerk-expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import { ThemeProvider } from "@/src/providers/ThemeProvider";
-import { api } from "@/convex/_generated/api";
 import { usePushNotifications } from "@/src/hooks/usePushNotifications";
+
+import "react-native-get-random-values";
+import * as ExpoStandardWebCrypto from "expo-standard-web-crypto";
+import { useKeySetup } from "@/src/hooks/useKeySetup";
+import { KeySetupProvider } from "@/src/providers/KeySetupProvider";
+
+ExpoStandardWebCrypto.polyfillWebCrypto();
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -46,11 +52,13 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ClerkLoaded>
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <GestureHandlerRootView>
-            <ThemeProvider>
-              <RootAuthLayout />
-            </ThemeProvider>
-          </GestureHandlerRootView>
+          <KeySetupProvider>
+            <GestureHandlerRootView>
+              <ThemeProvider>
+                <RootAuthLayout />
+              </ThemeProvider>
+            </GestureHandlerRootView>
+          </KeySetupProvider>
         </ConvexProviderWithClerk>
       </ClerkLoaded>
     </ClerkProvider>
@@ -60,12 +68,8 @@ export default function RootLayout() {
 const RootAuthLayout = () => {
   const { isLoaded, isSignedIn } = useAuth();
 
-  const currentUser = useQuery(
-    api.functions.users.getCurrentUser,
-    isSignedIn ? undefined : "skip",
-  );
-
-  usePushNotifications(currentUser);
+  usePushNotifications(isSignedIn || false);
+  useKeySetup();
 
   if (!isLoaded) {
     return (

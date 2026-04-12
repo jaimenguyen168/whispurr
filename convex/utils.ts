@@ -27,6 +27,26 @@ export const getAuthenticatedUser = async (ctx: any) => {
   return user;
 };
 
+export const getUserParticipants = async (
+  ctx: any,
+  conversationId: string,
+  userId: string,
+) => {
+  const userParticipant = await ctx.db
+    .query("conversationParticipants")
+    .withIndex("by_conversation_and_user", (q: any) =>
+      q.eq("conversationId", conversationId).eq("userId", userId),
+    )
+    .filter((q: any) => q.eq(q.field("leftAt"), undefined))
+    .first();
+
+  if (!userParticipant) {
+    throw new Error("User is not a participant in this conversation");
+  }
+
+  return userParticipant;
+};
+
 export const getImageUrl = async (ctx: any, imageField: string | undefined) => {
   if (!imageField) return undefined;
 
