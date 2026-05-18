@@ -20,39 +20,27 @@ const AddConversationView = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<TextInput>(null);
 
-  const users = useQuery(api.functions.users.getUsers);
+  const results = useQuery(
+    api.functions.users.searchUsersByEmail,
+    searchQuery.trim().length > 0 ? { emailQuery: searchQuery } : "skip",
+  );
+
   const createConversation = useMutation(
     api.functions.conversations.createConversation,
   );
-
-  console.log(users);
-
-  const filteredUsers =
-    users?.filter(
-      (user: User) =>
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
 
   useEffect(() => {
     const timer = setTimeout(() => {
       searchInputRef.current?.focus();
     }, 100);
-
     return () => clearTimeout(timer);
   }, []);
 
   const handleUserPress = async (user: User) => {
     try {
       router.dismiss();
-
-      const conversationId = await createConversation({
-        receiverId: user._id,
-      });
-
-      setTimeout(() => {
-        router.push(`/(chat)/${conversationId}`);
-      }, 100);
+      const conversationId = await createConversation({ receiverId: user._id });
+      setTimeout(() => router.push(`/(chat)/${conversationId}`), 100);
     } catch (error) {
       console.error("Error creating conversation:", error);
     }
@@ -66,22 +54,17 @@ const AddConversationView = () => {
     >
       <View className="rounded-full items-center justify-center size-12 bg-primary-100 mr-3 overflow-hidden">
         {item.imageUrl ? (
-          <Image
-            source={item.imageUrl}
-            style={{ width: "100%", height: "100%" }}
-          />
+          <Image source={item.imageUrl} style={{ width: "100%", height: "100%" }} />
         ) : (
-          <Text className="font-bold text-primary-700 text-2xl">
+          <Text className="font-bold text-primary-700 text-3xl">
             {item.username.charAt(0).toUpperCase()}
           </Text>
         )}
       </View>
 
       <View className="flex-1">
-        <Text className="font-semibold text-base text-main">
-          {item.username}
-        </Text>
-        <Text className="text-sm text-secondary mt-0.5">{item.email}</Text>
+        <Text className="font-semibold text-lg text-main">{item.username}</Text>
+        <Text className="text-base text-secondary mt-0.5">{item.email}</Text>
       </View>
 
       <Ionicons name="chevron-forward" size={20} color={colors.muted} />
@@ -90,12 +73,24 @@ const AddConversationView = () => {
 
   const renderEmptyState = () => (
     <View className="flex-1 items-center justify-center py-20 px-6">
-      <Ionicons name="search" size={48} color={ThemeColors.secondary.base} />
-      <Text className="text-secondary-500 text-base mt-4 text-center">
-        {searchQuery
-          ? `No users found for "${searchQuery}"`
-          : "Start typing to search users"}
-      </Text>
+      {searchQuery.trim().length === 0 ? (
+        <>
+          <Ionicons name="mail-outline" size={48} color={ThemeColors.secondary.base} />
+          <Text className="text-main text-lg font-semibold mt-4 text-center">
+            Find someone by email
+          </Text>
+          <Text className="text-secondary text-base mt-2 text-center leading-5">
+            Type an email address or username to search for people to chat with.
+          </Text>
+        </>
+      ) : (
+        <>
+          <Ionicons name="search" size={48} color={ThemeColors.secondary.base} />
+          <Text className="text-secondary text-lg mt-4 text-center">
+            No users found for "{searchQuery}"
+          </Text>
+        </>
+      )}
     </View>
   );
 
@@ -104,7 +99,7 @@ const AddConversationView = () => {
       {/* Header */}
       <View className="px-3 py-3 flex-row justify-between items-center">
         <View className="size-8" />
-        <Text className="font-bold text-xl text-main">New Chat</Text>
+        <Text className="font-bold text-2xl text-main">New Chat</Text>
         <TouchableOpacity
           onPress={() => router.dismiss()}
           className="rounded-full items-center justify-center size-8 bg-surface"
@@ -121,13 +116,14 @@ const AddConversationView = () => {
           <TextInput
             ref={searchInputRef}
             className="flex-1 ml-3 text-secondary"
-            placeholder="Search by username or email"
+            placeholder="Search by email or username"
             placeholderTextColor={colors.muted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
             autoCapitalize="none"
             autoCorrect={false}
+            keyboardType="email-address"
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
@@ -135,27 +131,20 @@ const AddConversationView = () => {
               className="ml-2"
               activeOpacity={0.7}
             >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={ThemeColors.secondary.main}
-              />
+              <Ionicons name="close-circle" size={20} color={ThemeColors.secondary.main} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Users List */}
+      {/* Results */}
       <FlatList
-        data={filteredUsers}
+        data={results ?? []}
         renderItem={renderUserItem}
         keyExtractor={(item) => item._id}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={{
-          flex: 1,
-          paddingBottom: 100,
-        }}
+        contentContainerStyle={{ flex: 1, paddingBottom: 100 }}
       />
     </View>
   );

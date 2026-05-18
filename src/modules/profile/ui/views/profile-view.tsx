@@ -11,31 +11,20 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import SettingsItem from "@/src/modules/profile/ui/components/SettingsItem";
-import Animated, {
-  useAnimatedScrollHandler,
-  useSharedValue,
-} from "react-native-reanimated";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import BlurNavigationHeader from "@/src/components/BlurNavigationHeader";
-
-const SCROLL_THRESHOLD = 56;
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const ProfileView = () => {
   const { signOut } = useAuth();
   const { setTheme, isDark } = useTheme();
   const colors = useThemeColors();
-  const scrollOffset = useSharedValue(0);
+  const insets = useSafeAreaInsets();
 
   const clearPushToken = useMutation(api.functions.users.clearPushToken);
-
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollOffset.value = event.contentOffset.y;
-    },
-  });
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
   const updateNotificationPreference = useMutation(
@@ -46,12 +35,8 @@ const ProfileView = () => {
     router.push("/profile/edit-profile");
   };
 
-  const handleCommunities = () => {
-    router.push("/");
-  };
-
   const handleFriends = () => {
-    router.push("/");
+    router.push("/profile/friends");
   };
 
   const handleNotificationToggle = async (value: boolean) => {
@@ -66,18 +51,6 @@ const ProfileView = () => {
         "Failed to update notification settings. Please try again.",
       );
     }
-  };
-
-  const handleSounds = () => {
-    router.push("/");
-  };
-
-  const handleUserGuide = () => {
-    router.push("/");
-  };
-
-  const handleHelpFeedback = () => {
-    router.push("/");
   };
 
   const handleLogOut = () => {
@@ -119,13 +92,11 @@ const ProfileView = () => {
         statusBarStyle={isDark ? "light" : "dark"}
         blurType={isDark ? "dark" : "light"}
       />
-      <Animated.ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerClassName="flex-1 px-6"
-        showsVerticalScrollIndicator={false}
-        onScroll={scrollHandler}
+      <View
+        className="flex-1 px-6"
         style={{
-          paddingTop: SCROLL_THRESHOLD + 12,
+          paddingTop: insets.top + 68,
+          paddingBottom: insets.bottom + 80,
         }}
       >
         {/* User Profile Header */}
@@ -144,7 +115,7 @@ const ProfileView = () => {
                 />
               ) : (
                 <View className="w-16 h-16 rounded-full bg-primary-100 items-center justify-center">
-                  <Text className="text-primary-600 text-xl font-bold">
+                  <Text className="text-primary-600 text-2xl font-bold">
                     {currentUser.username?.charAt(0).toUpperCase() || "U"}
                   </Text>
                 </View>
@@ -169,25 +140,25 @@ const ProfileView = () => {
           />
         </TouchableOpacity>
 
-        {/* Settings Sections */}
-        <View className="mb-4 rounded-xl overflow-hidden">
-          <SettingsItem
-            icon="people-outline"
-            title="Friends"
-            onPress={handleFriends}
-          />
-          <SettingsItem
-            icon="globe-outline"
-            title="Communities"
-            onPress={handleCommunities}
-            showBorder={false}
-          />
+        {/* Community Section */}
+        <View className="mb-4">
+          <View className="py-3">
+            <Text className="text-2xl font-bold text-main">Community</Text>
+          </View>
+          <View className="rounded-xl overflow-hidden">
+            <SettingsItem
+              icon="people-outline"
+              title="Friends"
+              onPress={handleFriends}
+              showBorder={false}
+            />
+          </View>
         </View>
 
         {/* Preferences Section */}
         <View className="mb-4">
           <View className="py-3">
-            <Text className="text-xl font-bold text-main">Preferences</Text>
+            <Text className="text-2xl font-bold text-main">Preferences</Text>
           </View>
           <View className="rounded-xl overflow-hidden">
             <SettingsItem
@@ -211,6 +182,7 @@ const ProfileView = () => {
               icon="notifications-outline"
               title="Push Notifications"
               showChevron={false}
+              showBorder={false}
               rightComponent={
                 <Switch
                   value={currentUser.notificationsEnabled ?? true}
@@ -224,45 +196,18 @@ const ProfileView = () => {
                 />
               }
             />
-            <SettingsItem
-              icon="volume-medium-outline"
-              title="Sounds"
-              onPress={handleSounds}
-              showBorder={false}
-            />
           </View>
         </View>
 
-        {/* Other Section */}
-        <View className="mb-8">
-          <View className="py-3">
-            <Text className="text-xl font-bold text-main">Other</Text>
-          </View>
-          <View className="rounded-xl overflow-hidden">
-            <SettingsItem
-              icon="book-outline"
-              title="User Guide"
-              onPress={handleUserGuide}
-            />
-            <SettingsItem
-              icon="help-circle-outline"
-              title="Help And Feedback"
-              onPress={handleHelpFeedback}
-            />
-            <SettingsItem
-              icon="log-out-outline"
-              title="Log Out"
-              onPress={handleLogOut}
-              showChevron={true}
-              iconColor="#ef4444"
-              showBorder={false}
-            />
-          </View>
-        </View>
-
-        {/* Bottom spacing */}
-        <View className="h-8" />
-      </Animated.ScrollView>
+        <View className="flex-1" />
+        <TouchableOpacity
+          onPress={handleLogOut}
+          className="rounded-xl bg-red-500 py-4 items-center"
+          activeOpacity={0.8}
+        >
+          <Text className="text-white font-semibold text-lg">Log Out</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };

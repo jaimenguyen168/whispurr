@@ -6,7 +6,30 @@ import {
   Pressable,
   Dimensions,
   Alert,
+  Linking,
 } from "react-native";
+
+const MEDIA_WIDTH = Dimensions.get("window").width * 0.65;
+
+const URL_REGEX = /https?:\/\/[^\s]+/g;
+
+function parseMessageSegments(text: string): { type: "text" | "url"; value: string }[] {
+  const segments: { type: "text" | "url"; value: string }[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  URL_REGEX.lastIndex = 0;
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", value: text.slice(lastIndex, match.index) });
+    }
+    segments.push({ type: "url", value: match[0] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", value: text.slice(lastIndex) });
+  }
+  return segments;
+}
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -22,7 +45,8 @@ import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
-import { useKeyReady } from "@/src/providers/KeySetupProvider";
+import LinkPreviewCard from "@/src/modules/conversation/ui/components/LinkPreviewCard";
+import EncryptedImage from "@/src/modules/conversation/ui/components/EncryptedImage";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import * as Clipboard from "expo-clipboard";
@@ -40,6 +64,7 @@ interface MessageItemProps {
   otherUser?: User;
   conversationId: string;
   clerkUserId: string;
+  conversationKey: string | null;
   onReply?: (message: Message) => void;
   onForward?: (decryptedContent: string) => void;
 }
@@ -50,11 +75,11 @@ const MessageItem = ({
   otherUser,
   conversationId,
   clerkUserId,
+  conversationKey,
   onReply,
   onForward,
 }: MessageItemProps) => {
   const colors = useThemeColors();
-  const { isKeyReady } = useKeyReady();
   const isFromOtherUser = message.senderId === otherUser?._id;
   const messageContainerRef = useRef<View>(null);
   const hasReactions = message.reactions && message.reactions.length > 0;
@@ -102,15 +127,14 @@ const MessageItem = ({
   // ─── Decryption ──────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isKeyReady || !clerkUserId) return;
+    if (!conversationKey) return;
 
     const decryptContent = async () => {
       try {
         const decrypted = await decryptMessage(
           message.content,
-          conversationId,
+          conversationKey,
           message.iv,
-          clerkUserId,
         );
         setDecryptedContent(decrypted);
       } catch (error) {
@@ -120,18 +144,17 @@ const MessageItem = ({
     };
 
     decryptContent();
-  }, [message.content, message.iv, conversationId, isKeyReady, clerkUserId]);
+  }, [message.content, message.iv, conversationKey]);
 
   useEffect(() => {
-    if (!isKeyReady || !clerkUserId || !message.replyTo) return;
+    if (!conversationKey || !message.replyTo) return;
 
     const decryptReplyContent = async () => {
       try {
         const decrypted = await decryptMessage(
           message.replyTo!.content,
-          conversationId,
+          conversationKey,
           message.replyTo!.iv,
-          clerkUserId,
         );
         setDecryptedReplyContent(decrypted);
       } catch (error) {
@@ -141,7 +164,7 @@ const MessageItem = ({
     };
 
     decryptReplyContent();
-  }, [message.replyTo, conversationId, clerkUserId, isKeyReady]);
+  }, [message.replyTo, conversationKey]);
 
   // ─── Reaction emojis ─────────────────────────────────────────────
 
@@ -238,7 +261,11 @@ const MessageItem = ({
     const layout = await measureMessagePosition();
     setMessageLayout(layout);
 
-    const targetY = screenHeight * 0.35;
+    // Reserve space for: reaction bar (~90px) + context menu items (~220px) + padding (~80px)
+    const menuHeight = 430;
+    const maxBottomY = screenHeight - menuHeight;
+    // Target: place the message so its bottom sits just above the menu
+    const targetY = Math.min(maxBottomY - layout.height, screenHeight * 0.25);
     const moveUpDistance = targetY - layout.y;
 
     scale.value = withTiming(0.95, { duration: 150 });
@@ -327,13 +354,13 @@ const MessageItem = ({
   const getStatusIcon = (status: Message["status"]) => {
     switch (status) {
       case "sending":
-        return <Ionicons name="time-outline" size={12} color={colors.text} />;
+        return <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.7)" />;
       case "sent":
-        return <Ionicons name="checkmark" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark" size={12} color="rgba(255,255,255,0.7)" />;
       case "delivered":
-        return <Ionicons name="checkmark-done" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark-done" size={12} color="rgba(255,255,255,0.7)" />;
       case "read":
-        return <Ionicons name="checkmark-done" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark-done" size={12} color="rgba(255,255,255,0.7)" />;
       default:
         return null;
     }
@@ -343,88 +370,144 @@ const MessageItem = ({
 
   const renderMessageContent = () => (
     <View
-      className={`rounded-3xl px-4 pt-4 pb-2 relative ${hasReactions ? "mt-3" : ""} ${
-        isFromOtherUser
-          ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-none"
-          : "bg-accent rounded-br-none"
+      className={`rounded-3xl relative ${hasReactions ? "mt-3" : ""} ${
+        message.type === "image" || message.type === "gif"
+          ? "overflow-hidden"
+          : `px-4 pt-4 pb-2 ${isFromOtherUser ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-none" : "bg-accent rounded-br-none"}`
       }`}
     >
-      {message.replyTo && decryptedReplyContent && (
-        <View
-          className={`mb-3 p-2 rounded-lg border-l-2 ${
-            isFromOtherUser
-              ? "bg-secondary-100/50 dark:bg-secondary-600/30 border-secondary-300 dark:border-secondary-400"
-              : "bg-white/10 border-white/30"
-          }`}
-        >
-          <Text
-            className={`text-xs font-medium mb-1 ${
-              isFromOtherUser
-                ? "text-secondary-500 dark:text-secondary-300"
-                : "text-white/70"
-            }`}
+      {(message.type === "image" || message.type === "gif") && (message as any).imageUrl ? (
+        <View style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}>
+          {message.type === "image" && message.iv && conversationKey ? (
+            <EncryptedImage
+              url={(message as any).imageUrl}
+              iv={message.iv}
+              conversationKey={conversationKey}
+              mimeType={(message as any).mimeType ?? "image/jpeg"}
+              width={MEDIA_WIDTH}
+              height={MEDIA_WIDTH}
+              contentFit="cover"
+            />
+          ) : (
+            <Image
+              source={(message as any).imageUrl}
+              style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}
+              contentFit="cover"
+            />
+          )}
+          <View
+            className={`absolute bottom-0 left-0 right-0 flex-row items-center px-3 py-1.5 ${isFromOtherUser ? "justify-start" : "justify-end"}`}
+            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
           >
-            Replying to{" "}
-            {message.replyTo.senderId === currentUser?._id
-              ? "yourself"
-              : otherUser?.username}
-          </Text>
-          <Text
-            className={`text-sm ${
-              isFromOtherUser
-                ? "text-secondary-600 dark:text-secondary-200"
-                : "text-white/80"
-            }`}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {decryptedReplyContent}
-          </Text>
-        </View>
-      )}
-
-      <Text
-        className={`text-lg leading-5 font-medium ${
-          isFromOtherUser
-            ? "text-secondary-800 dark:text-secondary-50"
-            : "text-white"
-        }`}
-        style={{ flexShrink: 1 }}
-      >
-        {decryptedContent}
-      </Text>
-
-      <View
-        className={`flex-row items-center ${
-          isFromOtherUser ? "justify-start" : "justify-end"
-        }`}
-      >
-        <Text
-          className={`text-xs font-light ${
-            isFromOtherUser ? "text-secondary-200" : "text-secondary-50"
-          }`}
-        >
-          {formatTime(message._creationTime, "time")}
-        </Text>
-
-        {!isFromOtherUser && (
-          <View className="ml-1 dark:text-secondary-50">
-            {getStatusIcon(message.status)}
+            <Text className="text-sm text-white/90">
+              {formatTime(message._creationTime, "time")}
+            </Text>
           </View>
-        )}
-      </View>
+        </View>
+      ) : (
+        <>
+          {message.replyTo && decryptedReplyContent && (
+            <View
+              className={`mb-3 p-2 rounded-lg border-l-2 ${
+                isFromOtherUser
+                  ? "bg-secondary-100/50 dark:bg-secondary-600/30 border-secondary-300 dark:border-secondary-400"
+                  : "bg-white/10 border-white/30"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium mb-1 ${
+                  isFromOtherUser
+                    ? "text-secondary-500 dark:text-secondary-300"
+                    : "text-white/70"
+                }`}
+              >
+                Replying to{" "}
+                {message.replyTo.senderId === currentUser?._id
+                  ? "yourself"
+                  : otherUser?.username}
+              </Text>
+              <Text
+                className={`text-base ${
+                  isFromOtherUser
+                    ? "text-secondary-600 dark:text-secondary-200"
+                    : "text-white/80"
+                }`}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {decryptedReplyContent}
+              </Text>
+            </View>
+          )}
 
-      <MessageReactionBadge
-        reactions={message.reactions}
-        className={`absolute -top-5 ${isFromOtherUser ? "-right-4" : "-left-4"}`}
-        animateIcon={recentReaction}
-      />
+          {(() => {
+            const segments = parseMessageSegments(decryptedContent);
+            const firstUrl = segments.find((s) => s.type === "url")?.value;
+            return (
+              <>
+                <Text
+                  className={`text-xl leading-5 font-medium ${
+                    isFromOtherUser
+                      ? "text-secondary-800 dark:text-secondary-50"
+                      : "text-white"
+                  }`}
+                  style={{ flexShrink: 1 }}
+                >
+                  {segments.map((seg, i) =>
+                    seg.type === "url" ? (
+                      <Text
+                        key={i}
+                        className={isFromOtherUser ? "text-primary-500 dark:text-primary-300" : "text-white"}
+                        style={{ textDecorationLine: "underline" }}
+                        onPress={() => Linking.openURL(seg.value)}
+                      >
+                        {seg.value}
+                      </Text>
+                    ) : (
+                      <Text key={i}>{seg.value}</Text>
+                    )
+                  )}
+                </Text>
+                {firstUrl && (
+                  <LinkPreviewCard url={firstUrl} isFromOtherUser={isFromOtherUser} />
+                )}
+              </>
+            );
+          })()}
+
+          <View
+            className={`flex-row items-center ${
+              isFromOtherUser ? "justify-start" : "justify-end"
+            }`}
+          >
+            <Text
+              className={`text-sm font-light ${
+                isFromOtherUser ? "text-secondary-500 dark:text-secondary-200" : "text-white/70"
+              }`}
+            >
+              {formatTime(message._creationTime, "time")}
+            </Text>
+
+            {!isFromOtherUser && (
+              <View className="ml-1 dark:text-secondary-50">
+                {getStatusIcon(message.status)}
+              </View>
+            )}
+          </View>
+
+          <MessageReactionBadge
+            reactions={message.reactions}
+            className={`absolute -top-5 ${isFromOtherUser ? "-right-4" : "-left-4"}`}
+            animateIcon={recentReaction}
+          />
+        </>
+      )}
     </View>
   );
 
   const renderReactionsBar = () => (
     <View className="bg-white dark:bg-gray-800/90 rounded-full px-6 py-3 shadow-lg">
-      <Text className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+      <Text className="text-center text-base text-gray-500 dark:text-gray-400 mb-2">
         Tap or pick an emoji to react
       </Text>
       <View className="flex-row items-center justify-between">
@@ -467,7 +550,7 @@ const MessageItem = ({
             style={{ marginRight: 12 }}
           />
           <Text
-            className={`text-base ${
+            className={`text-lg ${
               option.danger
                 ? "text-red-500"
                 : "text-gray-900 dark:text-gray-100"
@@ -499,7 +582,7 @@ const MessageItem = ({
                   style={{ width: "100%", height: "100%" }}
                 />
               ) : (
-                <Text className="font-bold text-primary-700 text-lg">
+                <Text className="font-bold text-primary-700 text-xl">
                   {otherUser?.username?.charAt(0).toUpperCase()}
                 </Text>
               )}

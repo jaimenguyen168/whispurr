@@ -43,18 +43,86 @@ export const getUsers = query({
   handler: async (ctx) => {
     const currentUser = await getAuthenticatedUser(ctx);
 
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", currentUser._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", currentUser._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
     const users = await ctx.db
       .query("users")
       .filter((q) => q.neq(q.field("_id"), currentUser._id))
       .collect();
 
     return await Promise.all(
-      users.map(async (user) => {
+      users
+        .filter((u) => !blockedIds.has(u._id))
+        .map(async (user) => {
+          const imageUrl = await getImageUrl(ctx, user.imageUrl);
+          return {
+            ...user,
+            imageUrl,
+            notificationsEnabled: user.notificationsEnabled ?? true,
+          };
+        }),
+    );
+  },
+});
+
+export const searchUsersByEmail = query({
+  args: { emailQuery: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.emailQuery.trim()) return [];
+
+    const currentUser = await getAuthenticatedUser(ctx);
+
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", currentUser._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", currentUser._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
+    const query = args.emailQuery.toLowerCase().trim();
+
+    const users = await ctx.db
+      .query("users")
+      .filter((q) => q.neq(q.field("_id"), currentUser._id))
+      .collect();
+
+    const matched = users.filter(
+      (u) =>
+        !blockedIds.has(u._id) &&
+        (u.email.toLowerCase().includes(query) ||
+          u.username.toLowerCase().includes(query)),
+    );
+
+    return await Promise.all(
+      matched.map(async (user) => {
         const imageUrl = await getImageUrl(ctx, user.imageUrl);
         return {
           ...user,
           imageUrl,
-          notificationsEnabled: user.notificationsEnabled ?? true, // Default to true
+          notificationsEnabled: user.notificationsEnabled ?? true,
         };
       }),
     );
@@ -196,6 +264,64 @@ export const getUserNotificationPreference = query({
   handler: async (ctx, args) => {
     const user = await ctx.db.get(args.userId);
     return user?.notificationsEnabled ?? true; // Default to true if not set
+  },
+});
+
+export const getFriends = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", user._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", user._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
+    const participations = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_user_active", (q) =>
+        q.eq("userId", user._id).eq("leftAt", undefined),
+      )
+      .collect();
+
+    const friends = await Promise.all(
+      participations.map(async (participation) => {
+        const otherParticipant = await ctx.db
+          .query("conversationParticipants")
+          .withIndex("by_conversation", (q) =>
+            q.eq("conversationId", participation.conversationId),
+          )
+          .filter((q) => q.neq(q.field("userId"), user._id))
+          .first();
+
+        if (!otherParticipant) return null;
+        if (blockedIds.has(otherParticipant.userId)) return null;
+
+        const friend = await ctx.db.get(otherParticipant.userId);
+        if (!friend) return null;
+
+        const imageUrl = await getImageUrl(ctx, friend.imageUrl);
+
+        return {
+          ...friend,
+          imageUrl,
+          conversationId: participation.conversationId,
+        };
+      }),
+    );
+
+    return friends.filter((f): f is NonNullable<typeof f> => f !== null);
   },
 });
 

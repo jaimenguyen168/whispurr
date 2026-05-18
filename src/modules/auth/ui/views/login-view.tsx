@@ -9,7 +9,7 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import FormField from "@/src/modules/auth/ui/components/FormField";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { validateFormData } from "@/src/utils/form-validator";
-import { useSignIn } from "@clerk/clerk-expo";
+import { useSignIn } from "@clerk/expo";
 import {
   getClerkErrorMessage,
   loginSchema,
@@ -130,9 +130,9 @@ const LoginView = () => {
           </View>
 
           {/* Logo Section */}
-          <View className="items-center my-8">
+          <View className="items-center my-4">
             {/* App Name */}
-            <Text className="text-4xl font-semibold text-secondary-700 mb-2 uppercase tracking-widest">
+            <Text className="text-3xl font-semibold text-secondary-700 mb-2 uppercase leading-loose tracking-wide">
               Whis<Text className="text-primary-500 font-bold">purr</Text>
             </Text>
 
@@ -146,14 +146,14 @@ const LoginView = () => {
 
           {/* Form Section */}
           <View className="flex-1">
-            <Text className="text-2xl font-semibold text-secondary-700 text-center mb-4">
+            <Text className="text-3xl font-semibold text-secondary-700 text-center mb-4">
               Log In
             </Text>
 
             {/* General Error Message */}
             {errors.general && (
               <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <Text className="text-red-600 text-sm font-medium">
+                <Text className="text-red-600 text-base font-medium">
                   {errors.general}
                 </Text>
               </View>
@@ -187,7 +187,7 @@ const LoginView = () => {
             />
 
             <View className="flex-row items-center justify-end mb-4 -mt-4">
-              <Text className="text-red-500 font-light text-xs">
+              <Text className="text-red-500 font-light text-sm">
                 (*) Required
               </Text>
             </View>

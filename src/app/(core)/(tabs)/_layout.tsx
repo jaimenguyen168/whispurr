@@ -20,16 +20,16 @@ export default function TabsLayout() {
           drawable="chat_drawable"
         />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="groups">
-        <Label>Groups</Label>
-        <Icon
-          sf={{
-            default: "person.3",
-            selected: "person.3.fill",
-          }}
-          drawable="people_drawable"
-        />
-      </NativeTabs.Trigger>
+      {/*<NativeTabs.Trigger name="groups">*/}
+      {/*  <Label>Groups</Label>*/}
+      {/*  <Icon*/}
+      {/*    sf={{*/}
+      {/*      default: "person.3",*/}
+      {/*      selected: "person.3.fill",*/}
+      {/*    }}*/}
+      {/*    drawable="people_drawable"*/}
+      {/*  />*/}
+      {/*</NativeTabs.Trigger>*/}
       <NativeTabs.Trigger name="profile">
         <Label>Profile</Label>
         <Icon

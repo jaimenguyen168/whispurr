@@ -41,7 +41,7 @@ const SettingsItem = ({
       </View>
 
       {/* Title */}
-      <Text className="flex-1 text-base font-medium text-secondary">
+      <Text className="flex-1 text-lg font-medium text-secondary">
         {title}
       </Text>
 

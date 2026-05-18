@@ -16,7 +16,7 @@ import {
 } from "@/src/modules/chats/ui/components/ChatsHeaders";
 import { ConversationWithDetails } from "@/src/types/convex";
 import ConversationItem from "@/src/modules/chats/ui/components/ConversationItem";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 
 const HEADER_HEIGHT = 60;
 

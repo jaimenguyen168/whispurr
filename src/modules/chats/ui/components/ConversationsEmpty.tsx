@@ -14,10 +14,10 @@ const ConversationsEmpty = () => {
           />
         </View>
         <View className="items-center gap-1">
-          <Text className="text-accent font-bold text-xl">
+          <Text className="text-accent font-bold text-2xl">
             No conversations yet
           </Text>
-          <Text className="text-primary-500 font-medium text-base text-center leading-6">
+          <Text className="text-primary-500 font-medium text-lg text-center leading-6">
             Start your first conversation to see it appear here
           </Text>
         </View>

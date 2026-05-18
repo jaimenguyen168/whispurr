@@ -21,7 +21,7 @@ const AppButton = ({
       case "secondary":
         return "bg-secondary-400";
       case "outline":
-        return "bg-secondary-50 border border-secondary-400";
+        return "bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600";
       default:
         return "bg-primary-600";
     }
@@ -47,7 +47,7 @@ const AppButton = ({
       {...props}
     >
       {typeof children === "string" ? (
-        <Text className={`text-center font-semibold text-lg ${getTextColor()}`}>
+        <Text className={`text-center font-semibold text-xl ${getTextColor()}`}>
           {children}
         </Text>
       ) : (

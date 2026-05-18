@@ -7,6 +7,22 @@ export const getConversationsForUser = query({
   handler: async (ctx) => {
     const user = await getAuthenticatedUser(ctx);
 
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", user._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", user._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
     const userParticipants = await ctx.db
       .query("conversationParticipants")
       .withIndex("by_user_active", (q) =>
@@ -20,25 +36,16 @@ export const getConversationsForUser = query({
         const conversation = await ctx.db.get(participant.conversationId);
         if (!conversation) return null;
 
-        // Check if conversation has any messages
-        const messageCount = await ctx.db
-          .query("messages")
-          .withIndex("by_conversation", (q) =>
-            q.eq("conversationId", participant.conversationId),
-          )
-          .filter((q) => q.eq(q.field("deletedAt"), undefined))
-          .collect()
-          .then((messages) => messages.length);
-
-        // Skip conversations with no messages
-        if (messageCount === 0) return null;
-
         const allParticipants = await ctx.db
           .query("conversationParticipants")
           .withIndex("by_conversation", (q) =>
             q.eq("conversationId", participant.conversationId),
           )
           .collect();
+
+        // Hide conversations with blocked users
+        const otherParticipant = allParticipants.find((p) => p.userId !== user._id);
+        if (otherParticipant && blockedIds.has(otherParticipant.userId)) return null;
 
         const activeParticipants = allParticipants.filter((p) => !p.leftAt);
         const participantIds = activeParticipants.map((p) => p.userId);
@@ -55,7 +62,12 @@ export const getConversationsForUser = query({
 
     return conversationsWithDetails
       .filter((conv): conv is NonNullable<typeof conv> => conv !== null)
-      .sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+      .sort((a, b) => {
+        const aPinned = a.userParticipant.pinnedAt ?? 0;
+        const bPinned = b.userParticipant.pinnedAt ?? 0;
+        if (aPinned !== bPinned) return bPinned - aPinned;
+        return (b.lastMessageAt || 0) - (a.lastMessageAt || 0);
+      });
   },
 });
 
@@ -152,6 +164,53 @@ export const createConversation = mutation({
     });
 
     return conversationId;
+  },
+});
+
+export const pinConversation = mutation({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const userParticipant = await getUserParticipants(ctx, args.conversationId, user._id);
+
+    // Unpin any currently pinned conversation first
+    const allParticipations = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_user_active", (q) => q.eq("userId", user._id).eq("leftAt", undefined))
+      .collect();
+
+    for (const p of allParticipations) {
+      if (p.pinnedAt && p._id !== userParticipant._id) {
+        await ctx.db.patch(p._id, { pinnedAt: undefined });
+      }
+    }
+
+    // Toggle: unpin if already pinned, otherwise pin
+    const isAlreadyPinned = !!userParticipant.pinnedAt;
+    await ctx.db.patch(userParticipant._id, {
+      pinnedAt: isAlreadyPinned ? undefined : Date.now(),
+    });
+
+    return { pinned: !isAlreadyPinned };
+  },
+});
+
+export const hideConversationForAll = mutation({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    await getAuthenticatedUser(ctx);
+
+    const participants = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", args.conversationId),
+      )
+      .collect();
+
+    for (const participant of participants) {
+      await ctx.db.patch(participant._id, { isHidden: true });
+    }
   },
 });
 
@@ -311,5 +370,35 @@ export const updateLastSeenAt = mutation({
     });
 
     return { success: true };
+  },
+});
+
+/**
+ * Shared conversation encryption key.
+ *
+ * First caller provides a newly-generated key; subsequent callers (on any
+ * device, any user in the conversation) receive the same stored key.
+ * The key is a random 64-char hex string (256 bits) generated on the client.
+ */
+export const getOrSetConversationKey = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    proposedKey: v.string(), // ignored if a key already exists
+  },
+  handler: async (ctx, args) => {
+    await getAuthenticatedUser(ctx); // ensure caller is authenticated
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+
+    if (conversation.lastMessageEncryptionKey) {
+      return conversation.lastMessageEncryptionKey;
+    }
+
+    // First time — store the proposed key
+    await ctx.db.patch(args.conversationId, {
+      lastMessageEncryptionKey: args.proposedKey,
+    });
+    return args.proposedKey;
   },
 });

@@ -25,13 +25,13 @@ export const ChatsHeader1 = ({
               height: 48,
             }}
           />
-          <Text className="font-bold text-xl text-accent">Whispurr</Text>
+          <Text className="font-bold text-2xl text-accent">Whispurr</Text>
         </TouchableOpacity>
       </Link>
 
       <View className="flex-row gap-4">
         {conversations.length > 0 && (
-          <Link href={"/chats/add-conversation"} asChild>
+          <Link href={"/chats/search-conversations"} asChild>
             <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
               <Ionicons name="search" size={20} color="#081c15" />
             </TouchableOpacity>
@@ -60,18 +60,25 @@ export const ChatsHeader2 = () => {
       <View className="px-6 pb-3 flex-row justify-between items-center">
         <View className="size-10" />
         <View className="flex-1 items-center">
-          <Text className="font-bold text-xl text-accent mb-0.5">Whispurr</Text>
+          <Text className="font-bold text-2xl text-accent mb-0.5">Whispurr</Text>
           <Link href={"/chats"} asChild>
             <TouchableOpacity className="flex-row items-center gap-0.5">
-              <Text className="text-sm text-main">Chats</Text>
+              <Text className="text-base text-main">Chats</Text>
             </TouchableOpacity>
           </Link>
         </View>
-        <Link href={"/chats/add-conversation"} asChild>
-          <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
-            <Ionicons name="add" size={24} color="#081c15" />
-          </TouchableOpacity>
-        </Link>
+        <View className="flex-row gap-3">
+          <Link href={"/chats/search-conversations"} asChild>
+            <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
+              <Ionicons name="search" size={20} color="#081c15" />
+            </TouchableOpacity>
+          </Link>
+          <Link href={"/chats/add-conversation"} asChild>
+            <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
+              <Ionicons name="add" size={24} color="#081c15" />
+            </TouchableOpacity>
+          </Link>
+        </View>
       </View>
     </BlurView>
   );

@@ -98,7 +98,7 @@ const MessageReactionBadge = ({
         {Object.entries(reactionCounts).map(([emoji, count], index) => (
           <React.Fragment key={emoji}>
             <Animated.Text
-              className="text-xs flex-shrink-0"
+              className="text-sm flex-shrink-0"
               style={emoji === animateIcon ? animatedStyle : undefined}
             >
               {emoji}
@@ -106,7 +106,7 @@ const MessageReactionBadge = ({
           </React.Fragment>
         ))}
         {Object.entries(reactionCounts).length > 1 && (
-          <Text className="text-secondary text-xs ml-1 font-medium">
+          <Text className="text-secondary text-sm ml-1 font-medium">
             {Object.entries(reactionCounts).length}
           </Text>
         )}

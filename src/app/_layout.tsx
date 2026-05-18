@@ -13,8 +13,8 @@ import {
 } from "@expo-google-fonts/nunito";
 import { ConvexReactClient } from "convex/react";
 import { ActivityIndicator, View } from "react-native";
-import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
-import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import { ThemeProvider } from "@/src/providers/ThemeProvider";
@@ -22,10 +22,12 @@ import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 
 import "react-native-get-random-values";
 import * as ExpoStandardWebCrypto from "expo-standard-web-crypto";
-import { useKeySetup } from "@/src/hooks/useKeySetup";
-import { KeySetupProvider } from "@/src/providers/KeySetupProvider";
+import { StreamVideoProvider } from "@/src/providers/StreamVideoProvider";
+import { GiphySDK } from "@giphy/react-native-sdk";
 
 ExpoStandardWebCrypto.polyfillWebCrypto();
+
+GiphySDK.configure({ apiKey: process.env.EXPO_PUBLIC_GIPHY_API_KEY! });
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -52,13 +54,15 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ClerkLoaded>
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <KeySetupProvider>
-            <GestureHandlerRootView>
-              <ThemeProvider>
-                <RootAuthLayout />
-              </ThemeProvider>
-            </GestureHandlerRootView>
-          </KeySetupProvider>
+          <GestureHandlerRootView className="flex-1">
+            <StreamVideoProvider>
+              <GestureHandlerRootView>
+                <ThemeProvider>
+                  <RootAuthLayout />
+                </ThemeProvider>
+              </GestureHandlerRootView>
+            </StreamVideoProvider>
+          </GestureHandlerRootView>
         </ConvexProviderWithClerk>
       </ClerkLoaded>
     </ClerkProvider>
@@ -69,7 +73,6 @@ const RootAuthLayout = () => {
   const { isLoaded, isSignedIn } = useAuth();
 
   usePushNotifications(isSignedIn || false);
-  useKeySetup();
 
   if (!isLoaded) {
     return (

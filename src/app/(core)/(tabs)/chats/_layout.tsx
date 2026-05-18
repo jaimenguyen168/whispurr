@@ -26,6 +26,17 @@ export default function ChatsLayout() {
           },
         }}
       />
+      <Stack.Screen
+        name="search-conversations"
+        options={{
+          presentation: "formSheet",
+          headerShadowVisible: false,
+          sheetGrabberVisible: true,
+          contentStyle: {
+            backgroundColor: colors.background,
+          },
+        }}
+      />
     </Stack>
   );
 }

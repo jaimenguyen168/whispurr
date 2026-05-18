@@ -11,6 +11,7 @@ import { Image } from "expo-image";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useConversationKey } from "@/src/hooks/useConversationKey";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -39,6 +40,9 @@ const ForwardMessageModal = ({
     api.functions.conversations.getConversationsForUser,
   );
   const createMessage = useMutation(api.functions.messages.createMessage);
+  const targetConversationKey = useConversationKey(
+    selectedConversationId as any,
+  );
 
   const handleSelect = (conversationId: string) => {
     setSelectedConversationId((prev) =>
@@ -48,14 +52,17 @@ const ForwardMessageModal = ({
 
   const handleSend = async () => {
     if (!selectedConversationId || !clerkUserId || isSending) return;
+    if (!targetConversationKey) {
+      console.warn("[ForwardModal] Conversation key not ready yet");
+      return;
+    }
 
     setIsSending(true);
 
     try {
       const { encryptedContent, iv } = await encryptMessage(
         decryptedContent,
-        selectedConversationId,
-        clerkUserId,
+        targetConversationKey,
       );
 
       await createMessage({
@@ -119,7 +126,7 @@ const ForwardMessageModal = ({
 
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 pb-4">
-          <Text className="text-main font-bold text-lg">Forward to</Text>
+          <Text className="text-main font-bold text-xl">Forward to</Text>
           <TouchableOpacity onPress={handleClose}>
             <Ionicons name="close" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -152,7 +159,7 @@ const ForwardMessageModal = ({
               ) : (
                 <>
                   <Ionicons name="paper-plane" size={18} color="white" />
-                  <Text className="text-white font-semibold text-base">
+                  <Text className="text-white font-semibold text-lg">
                     Send
                   </Text>
                 </>
@@ -201,7 +208,7 @@ const OtherUserItem = ({
               style={{ width: "100%", height: "100%" }}
             />
           ) : (
-            <Text className="font-bold text-primary-700 text-2xl">
+            <Text className="font-bold text-primary-700 text-3xl">
               {user.username?.charAt(0).toUpperCase()}
             </Text>
           )}
@@ -215,7 +222,7 @@ const OtherUserItem = ({
       </View>
 
       <Text
-        className={`text-xs font-medium mt-2 text-center ${
+        className={`text-sm font-medium mt-2 text-center ${
           isSelected ? "text-accent" : "text-main"
         }`}
         numberOfLines={1}

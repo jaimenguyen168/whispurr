@@ -10,12 +10,13 @@
 
 import type * as auth from "../auth.js";
 import type * as functions_conversations from "../functions/conversations.js";
-import type * as functions_keys from "../functions/keys.js";
 import type * as functions_messages from "../functions/messages.js";
+import type * as functions_moderation from "../functions/moderation.js";
+import type * as functions_stream from "../functions/stream.js";
 import type * as functions_users from "../functions/users.js";
 import type * as http from "../http.js";
-import type * as lib_decryption from "../lib/decryption.js";
 import type * as schema_conversations from "../schema/conversations.js";
+import type * as schema_moderation from "../schema/moderation.js";
 import type * as schema_users from "../schema/users.js";
 import type * as storage from "../storage.js";
 import type * as utils from "../utils.js";
@@ -29,12 +30,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   "functions/conversations": typeof functions_conversations;
-  "functions/keys": typeof functions_keys;
   "functions/messages": typeof functions_messages;
+  "functions/moderation": typeof functions_moderation;
+  "functions/stream": typeof functions_stream;
   "functions/users": typeof functions_users;
   http: typeof http;
-  "lib/decryption": typeof lib_decryption;
   "schema/conversations": typeof schema_conversations;
+  "schema/moderation": typeof schema_moderation;
   "schema/users": typeof schema_users;
   storage: typeof storage;
   utils: typeof utils;

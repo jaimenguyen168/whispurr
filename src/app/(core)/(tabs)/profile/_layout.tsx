@@ -16,6 +16,7 @@ export default function ProfileLayout() {
     >
       <Stack.Screen name="index" />
       <Stack.Screen name="edit-profile" />
+      <Stack.Screen name="friends" />
     </Stack>
   );
 }

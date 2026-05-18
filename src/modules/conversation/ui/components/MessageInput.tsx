@@ -9,7 +9,9 @@ interface MessageInputProps {
   message: string;
   onMessageChange: (text: string) => void;
   onSendMessage: () => void;
-  onAddAttachment?: () => void;
+  onPickImage?: () => void;
+  onOpenCamera?: () => void;
+  onPickGif?: () => void;
   placeholder?: string;
   disabled?: boolean;
   replyingToMessage?: Message | null;
@@ -17,13 +19,16 @@ interface MessageInputProps {
   currentUser?: User;
   otherUser?: User;
   clerkUserId: string;
+  conversationKey?: string | null;
 }
 
 const MessageInput = ({
   message,
   onMessageChange,
   onSendMessage,
-  onAddAttachment,
+  onPickImage,
+  onOpenCamera,
+  onPickGif,
   placeholder = "Type a message",
   disabled = false,
   replyingToMessage,
@@ -31,19 +36,20 @@ const MessageInput = ({
   currentUser,
   otherUser,
   clerkUserId,
+  conversationKey,
 }: MessageInputProps) => {
   const colors = useThemeColors();
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   useEffect(() => {
     const decryptReplyContent = async () => {
-      if (replyingToMessage && clerkUserId) {
+      if (replyingToMessage && conversationKey) {
         try {
           const decrypted = await decryptMessage(
             replyingToMessage.content,
-            replyingToMessage.conversationId,
+            conversationKey,
             replyingToMessage.iv,
-            clerkUserId,
           );
           setDecryptedReplyContent(decrypted);
         } catch (error) {
@@ -56,15 +62,11 @@ const MessageInput = ({
     };
 
     decryptReplyContent();
-  }, [replyingToMessage, clerkUserId]);
+  }, [replyingToMessage, conversationKey]);
 
   const getReplyToUsername = () => {
     if (!replyingToMessage || !currentUser) return "";
-
-    if (replyingToMessage.senderId === currentUser._id) {
-      return "yourself";
-    }
-
+    if (replyingToMessage.senderId === currentUser._id) return "yourself";
     return otherUser?.username || "Unknown user";
   };
 
@@ -72,8 +74,42 @@ const MessageInput = ({
     ? `Reply to ${getReplyToUsername()}...`
     : placeholder;
 
+  const handleAttachOption = (fn?: () => void) => {
+    setShowAttachMenu(false);
+    fn?.();
+  };
+
   return (
     <View className="bg-card pb-8 px-6 pt-4">
+      {/* Attachment Menu */}
+      {showAttachMenu && (
+        <View className="bg-surface rounded-2xl mb-3 overflow-hidden border border-soft">
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onPickImage)}
+          >
+            <Ionicons name="image-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">Photo Library</Text>
+          </TouchableOpacity>
+          <View className="h-px bg-soft mx-4" />
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onOpenCamera)}
+          >
+            <Ionicons name="camera-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">Camera</Text>
+          </TouchableOpacity>
+          <View className="h-px bg-soft mx-4" />
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onPickGif)}
+          >
+            <Ionicons name="film-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">GIF</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Reply Context Bar */}
       {replyingToMessage && (
         <View className="bg-secondary-100 dark:bg-secondary-800 rounded-2xl px-4 py-3 mb-3 flex-row items-center justify-between">
@@ -85,12 +121,12 @@ const MessageInput = ({
                 color={colors.accent}
                 style={{ marginRight: 6 }}
               />
-              <Text className="text-sm font-medium text-accent">
+              <Text className="text-base font-medium text-accent">
                 Replying to {getReplyToUsername()}
               </Text>
             </View>
             <Text
-              className="text-sm text-secondary-600 dark:text-secondary-400"
+              className="text-base text-secondary-600 dark:text-secondary-400"
               numberOfLines={2}
               ellipsizeMode="tail"
             >
@@ -112,23 +148,28 @@ const MessageInput = ({
       <View className="flex-row items-end gap-2 justify-between">
         <TouchableOpacity
           className="rounded-full items-center justify-center size-10"
-          onPress={onAddAttachment}
+          onPress={() => setShowAttachMenu((v) => !v)}
           disabled={disabled}
         >
-          <Ionicons name="add" size={32} color={colors.text} />
+          <Ionicons
+            name={showAttachMenu ? "close" : "add"}
+            size={32}
+            color={colors.text}
+          />
         </TouchableOpacity>
 
         <TextInput
           value={message}
           onChangeText={onMessageChange}
-          autoCorrect={false}
-          autoCapitalize="none"
+          autoCorrect={true}
+          autoCapitalize="sentences"
           placeholder={updatedPlaceholder}
           className="flex-1 rounded-2xl bg-surface p-4 text-secondary"
           placeholderTextColor={colors.muted}
           multiline
           numberOfLines={5}
           editable={!disabled}
+          onFocus={() => setShowAttachMenu(false)}
         />
 
         <TouchableOpacity

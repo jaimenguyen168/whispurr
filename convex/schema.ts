@@ -1,10 +1,11 @@
 import { defineSchema } from "convex/server";
-import { userKeys, users } from "./schema/users";
+import { users } from "./schema/users";
 import {
   conversationParticipants,
   conversations,
   messages,
 } from "./schema/conversations";
+import { reports, blockedUsers } from "./schema/moderation";
 
 export default defineSchema({
   users: users,
@@ -13,5 +14,6 @@ export default defineSchema({
   conversationParticipants: conversationParticipants,
   messages: messages,
 
-  userKeys: userKeys,
+  reports: reports,
+  blockedUsers: blockedUsers,
 });
