@@ -47,7 +47,7 @@ const AppButton = ({
       {...props}
     >
       {typeof children === "string" ? (
-        <Text className={`text-center font-semibold text-lg ${getTextColor()}`}>
+        <Text className={`text-center font-semibold text-xl ${getTextColor()}`}>
           {children}
         </Text>
       ) : (

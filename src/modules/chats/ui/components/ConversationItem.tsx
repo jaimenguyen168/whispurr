@@ -1,10 +1,4 @@
-import {
-  View,
-  Text,
-  Alert,
-  Pressable,
-  Dimensions,
-} from "react-native";
+import { View, Text, Alert, Pressable, Dimensions } from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
@@ -64,10 +58,9 @@ const ConversationItem = ({
     otherParticipantId ? { userId: otherParticipantId } : "skip",
   );
 
-  const messages = useQuery(
-    api.functions.messages.getMessagesForConversation,
-    { conversationId: conversation._id },
-  );
+  const messages = useQuery(api.functions.messages.getMessagesForConversation, {
+    conversationId: conversation._id,
+  });
   const lastMessage = messages?.[messages.length - 1];
 
   const deleteConversation = useMutation(
@@ -118,7 +111,12 @@ const ConversationItem = ({
           resolve({ x, y, width, height });
         });
       } else {
-        resolve({ x: 0, y: screenHeight * 0.35, width: screenWidth, height: 80 });
+        resolve({
+          x: 0,
+          y: screenHeight * 0.35,
+          width: screenWidth,
+          height: 80,
+        });
       }
     });
 
@@ -225,7 +223,7 @@ const ConversationItem = ({
             style={{ width: "100%", height: "100%" }}
           />
         ) : (
-          <Text className="font-bold text-primary-700 text-lg">
+          <Text className="font-bold text-primary-700 text-xl">
             {otherParticipant?.username?.charAt(0).toUpperCase()}
           </Text>
         )}
@@ -233,19 +231,19 @@ const ConversationItem = ({
 
       <View className="flex-1">
         <View className="flex-row justify-between items-center mb-1">
-          <Text className="font-bold text-base text-main">
+          <Text className="font-bold text-xl text-main">
             {otherParticipant?.username}
           </Text>
           <View className="flex-row items-center gap-2">
             {isPinned && <AntDesign name="pushpin" size={12} color="#40916c" />}
-            <Text className="text-xs text-muted">
+            <Text className="text-base text-muted">
               {formatTime(conversation.lastMessageAt)}
             </Text>
           </View>
         </View>
 
         <Text
-          className="text-sm text-secondary"
+          className="text-base text-secondary"
           numberOfLines={1}
           ellipsizeMode="tail"
         >
@@ -267,7 +265,10 @@ const ConversationItem = ({
           onLongPress={handleLongPress}
           delayLongPress={300}
         >
-          <Animated.View style={animatedItemStyle} className="bg-transparent px-2">
+          <Animated.View
+            style={animatedItemStyle}
+            className="bg-transparent px-2"
+          >
             {renderItemContent()}
           </Animated.View>
         </Pressable>

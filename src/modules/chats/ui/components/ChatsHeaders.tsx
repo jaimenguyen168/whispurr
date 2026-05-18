@@ -25,7 +25,7 @@ export const ChatsHeader1 = ({
               height: 48,
             }}
           />
-          <Text className="font-bold text-xl text-accent">Whispurr</Text>
+          <Text className="font-bold text-2xl text-accent">Whispurr</Text>
         </TouchableOpacity>
       </Link>
 
@@ -60,10 +60,10 @@ export const ChatsHeader2 = () => {
       <View className="px-6 pb-3 flex-row justify-between items-center">
         <View className="size-10" />
         <View className="flex-1 items-center">
-          <Text className="font-bold text-xl text-accent mb-0.5">Whispurr</Text>
+          <Text className="font-bold text-2xl text-accent mb-0.5">Whispurr</Text>
           <Link href={"/chats"} asChild>
             <TouchableOpacity className="flex-row items-center gap-0.5">
-              <Text className="text-sm text-main">Chats</Text>
+              <Text className="text-base text-main">Chats</Text>
             </TouchableOpacity>
           </Link>
         </View>

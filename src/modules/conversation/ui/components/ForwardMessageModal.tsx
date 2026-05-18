@@ -126,7 +126,7 @@ const ForwardMessageModal = ({
 
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 pb-4">
-          <Text className="text-main font-bold text-lg">Forward to</Text>
+          <Text className="text-main font-bold text-xl">Forward to</Text>
           <TouchableOpacity onPress={handleClose}>
             <Ionicons name="close" size={22} color={colors.text} />
           </TouchableOpacity>
@@ -159,7 +159,7 @@ const ForwardMessageModal = ({
               ) : (
                 <>
                   <Ionicons name="paper-plane" size={18} color="white" />
-                  <Text className="text-white font-semibold text-base">
+                  <Text className="text-white font-semibold text-lg">
                     Send
                   </Text>
                 </>
@@ -208,7 +208,7 @@ const OtherUserItem = ({
               style={{ width: "100%", height: "100%" }}
             />
           ) : (
-            <Text className="font-bold text-primary-700 text-2xl">
+            <Text className="font-bold text-primary-700 text-3xl">
               {user.username?.charAt(0).toUpperCase()}
             </Text>
           )}
@@ -222,7 +222,7 @@ const OtherUserItem = ({
       </View>
 
       <Text
-        className={`text-xs font-medium mt-2 text-center ${
+        className={`text-sm font-medium mt-2 text-center ${
           isSelected ? "text-accent" : "text-main"
         }`}
         numberOfLines={1}

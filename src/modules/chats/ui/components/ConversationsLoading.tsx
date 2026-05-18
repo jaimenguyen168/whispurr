@@ -6,7 +6,7 @@ const ConversationsLoading = () => {
     <View className="flex-1 justify-center items-center bg-app px-6">
       <View className="items-center gap-2">
         <ActivityIndicator size="large" color="#40916c" />
-        <Text className="text-primary-600 font-medium text-lg">
+        <Text className="text-primary-600 font-medium text-xl">
           Loading conversations...
         </Text>
       </View>

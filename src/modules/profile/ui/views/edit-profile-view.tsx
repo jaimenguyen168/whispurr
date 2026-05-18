@@ -177,7 +177,7 @@ const EditProfileView = () => {
                   resizeMode="cover"
                 />
               ) : (
-                <Text className="font-bold text-primary-700 text-4xl">
+                <Text className="font-bold text-primary-700 text-5xl">
                   {user.username?.charAt(0).toUpperCase()}
                 </Text>
               )}
@@ -213,7 +213,7 @@ const EditProfileView = () => {
         <View className="px-6">
           {/* Username Field */}
           <View className="mb-6">
-            <Text className="text-secondary text-sm mb-2">Username</Text>
+            <Text className="text-secondary text-base mb-2">Username</Text>
             <FormField
               label=""
               value={formData.username}
@@ -229,11 +229,11 @@ const EditProfileView = () => {
 
           {/* Email Field (Read-only) */}
           <View className="mb-8">
-            <Text className="text-secondary text-sm mb-2">Email</Text>
+            <Text className="text-secondary text-base mb-2">Email</Text>
             <View className="py-4 px-4 bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl">
               <Text className="font-medium text-muted">{formData.email}</Text>
             </View>
-            <Text className="text-muted text-xs mt-1">
+            <Text className="text-muted text-sm mt-1">
               Email cannot be changed
             </Text>
           </View>
@@ -242,7 +242,7 @@ const EditProfileView = () => {
         {/* Save Button - Only enabled when there are changes */}
         <View className="px-6">
           <AppButton onPress={handleSave} disabled={isLoading || !hasChanges}>
-            <Text className="text-white text-lg font-semibold text-center">
+            <Text className="text-white text-xl font-semibold text-center">
               {isLoading ? "Saving..." : "Save Changes"}
             </Text>
           </AppButton>

@@ -106,7 +106,7 @@ const OAuthButton = ({ provider, disabled = false }: OAuthButtonProps) => {
           </>
         )}
 
-        <Text className={`text-lg font-semibold ${config.textColor}`}>
+        <Text className={`text-xl font-semibold ${config.textColor}`}>
           {isLoading ? "Signing in..." : config.label}
         </Text>
       </View>

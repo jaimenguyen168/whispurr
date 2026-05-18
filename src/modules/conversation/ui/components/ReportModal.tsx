@@ -120,7 +120,7 @@ const ReportModal = ({
             <>
               {/* Header */}
               <View className="flex-row items-center justify-between px-6 py-4">
-                <Text className="text-lg font-bold text-main">
+                <Text className="text-xl font-bold text-main">
                   Report {reportedUsername}
                 </Text>
                 <TouchableOpacity onPress={handleClose}>
@@ -128,7 +128,7 @@ const ReportModal = ({
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-sm text-muted px-6 mb-4">
+              <Text className="text-base text-muted px-6 mb-4">
                 Why are you reporting this conversation?
               </Text>
 
@@ -142,7 +142,7 @@ const ReportModal = ({
                     activeOpacity={0.7}
                     onPress={() => setSelectedReason(reason)}
                   >
-                    <Text className="text-base text-main">{reason}</Text>
+                    <Text className="text-lg text-main">{reason}</Text>
                     <View
                       className={`size-5 rounded-full border-2 items-center justify-center ${
                         selectedReason === reason
@@ -171,7 +171,7 @@ const ReportModal = ({
                     <ActivityIndicator color="white" />
                   ) : (
                     <Text
-                      className={`font-semibold text-base ${
+                      className={`font-semibold text-lg ${
                         selectedReason ? "text-white" : "text-muted"
                       }`}
                     >
@@ -188,10 +188,10 @@ const ReportModal = ({
                 <View className="size-16 rounded-full bg-green-100 items-center justify-center">
                   <Ionicons name="checkmark-circle" size={40} color="#22c55e" />
                 </View>
-                <Text className="text-lg font-bold text-main text-center">
+                <Text className="text-xl font-bold text-main text-center">
                   Report submitted
                 </Text>
-                <Text className="text-sm text-muted text-center">
+                <Text className="text-base text-muted text-center">
                   Thanks for letting us know. We'll review this conversation
                   and take appropriate action.
                 </Text>
@@ -207,7 +207,7 @@ const ReportModal = ({
                   {isSubmitting ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text className="font-semibold text-base text-white">
+                    <Text className="font-semibold text-lg text-white">
                       Block & hide conversation
                     </Text>
                   )}

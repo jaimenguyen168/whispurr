@@ -40,7 +40,7 @@ const SearchConversationsView = () => {
       {/* Header */}
       <View className="px-3 py-3 flex-row justify-between items-center">
         <View className="size-8" />
-        <Text className="font-bold text-xl text-main">Search</Text>
+        <Text className="font-bold text-2xl text-main">Search</Text>
         <TouchableOpacity
           onPress={() => router.dismiss()}
           className="rounded-full items-center justify-center size-8 bg-surface"
@@ -90,7 +90,7 @@ const SearchConversationsView = () => {
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center py-20 px-6">
             <Ionicons name="search" size={48} color={ThemeColors.secondary.base} />
-            <Text className="text-secondary-500 text-base mt-4 text-center">
+            <Text className="text-secondary-500 text-lg mt-4 text-center">
               {searchQuery
                 ? `No conversations found for "${searchQuery}"`
                 : "Search your conversations"}
@@ -113,17 +113,17 @@ const SearchConversationsView = () => {
                   style={{ width: "100%", height: "100%" }}
                 />
               ) : (
-                <Text className="font-bold text-primary-700 text-2xl">
+                <Text className="font-bold text-primary-700 text-3xl">
                   {item.username.charAt(0).toUpperCase()}
                 </Text>
               )}
             </View>
 
             <View className="flex-1">
-              <Text className="font-semibold text-base text-main">
+              <Text className="font-semibold text-lg text-main">
                 {item.username}
               </Text>
-              <Text className="text-sm text-secondary mt-0.5">{item.email}</Text>
+              <Text className="text-base text-secondary mt-0.5">{item.email}</Text>
             </View>
 
             <Ionicons name="chevron-forward" size={20} color={colors.muted} />

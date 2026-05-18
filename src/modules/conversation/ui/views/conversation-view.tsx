@@ -201,7 +201,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         size={64}
         color={ThemeColors.secondary.medium || "#9CA3AF"}
       />
-      <Text className="text-main text-center text-lg font-medium mt-4 mb-2">
+      <Text className="text-main text-center text-xl font-medium mt-4 mb-2">
         Start the conversation
       </Text>
       <Text className="text-secondary text-center">
@@ -289,7 +289,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
               style={{ marginTop: HEADER_HEIGHT + insets.top }}
             >
               <AntDesign name="pushpin" size={12} color="#40916c" />
-              <Text className="text-xs font-medium text-primary-600 dark:text-primary-300">
+              <Text className="text-sm font-medium text-primary-600 dark:text-primary-300">
                 Pinned conversation
               </Text>
             </View>
@@ -313,7 +313,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
 
           {hasOtherUserLeft && (
             <View className="bg-surface px-4 py-3 border-t border-soft">
-              <Text className="text-secondary text-center text-sm">
+              <Text className="text-secondary text-center text-base">
                 {otherUser.username} has left this conversation. You can no
                 longer send messages.
               </Text>

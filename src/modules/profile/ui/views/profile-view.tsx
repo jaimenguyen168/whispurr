@@ -94,7 +94,10 @@ const ProfileView = () => {
       />
       <View
         className="flex-1 px-6"
-        style={{ paddingTop: insets.top + 68, paddingBottom: insets.bottom + 80 }}
+        style={{
+          paddingTop: insets.top + 68,
+          paddingBottom: insets.bottom + 80,
+        }}
       >
         {/* User Profile Header */}
         <TouchableOpacity
@@ -112,7 +115,7 @@ const ProfileView = () => {
                 />
               ) : (
                 <View className="w-16 h-16 rounded-full bg-primary-100 items-center justify-center">
-                  <Text className="text-primary-600 text-xl font-bold">
+                  <Text className="text-primary-600 text-2xl font-bold">
                     {currentUser.username?.charAt(0).toUpperCase() || "U"}
                   </Text>
                 </View>
@@ -140,7 +143,7 @@ const ProfileView = () => {
         {/* Community Section */}
         <View className="mb-4">
           <View className="py-3">
-            <Text className="text-xl font-bold text-main">Community</Text>
+            <Text className="text-2xl font-bold text-main">Community</Text>
           </View>
           <View className="rounded-xl overflow-hidden">
             <SettingsItem
@@ -155,7 +158,7 @@ const ProfileView = () => {
         {/* Preferences Section */}
         <View className="mb-4">
           <View className="py-3">
-            <Text className="text-xl font-bold text-main">Preferences</Text>
+            <Text className="text-2xl font-bold text-main">Preferences</Text>
           </View>
           <View className="rounded-xl overflow-hidden">
             <SettingsItem
@@ -202,7 +205,7 @@ const ProfileView = () => {
           className="rounded-xl bg-red-500 py-4 items-center"
           activeOpacity={0.8}
         >
-          <Text className="text-white font-semibold text-base">Log Out</Text>
+          <Text className="text-white font-semibold text-lg">Log Out</Text>
         </TouchableOpacity>
       </View>
     </View>

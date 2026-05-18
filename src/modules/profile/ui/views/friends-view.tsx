@@ -36,8 +36,8 @@ const FriendsView = () => {
           friends !== undefined ? (
             <View className="flex-1 items-center justify-center mt-24 gap-3">
               <Ionicons name="people-outline" size={48} color={colors.muted} />
-              <Text className="text-base text-muted">No friends yet</Text>
-              <Text className="text-sm text-muted text-center px-8">
+              <Text className="text-lg text-muted">No friends yet</Text>
+              <Text className="text-base text-muted text-center px-8">
                 Start a conversation to see your friends here
               </Text>
             </View>
@@ -56,17 +56,17 @@ const FriendsView = () => {
                   style={{ width: "100%", height: "100%" }}
                 />
               ) : (
-                <Text className="font-bold text-primary-700 text-lg">
+                <Text className="font-bold text-primary-700 text-xl">
                   {item.username?.charAt(0).toUpperCase()}
                 </Text>
               )}
             </View>
 
             <View className="flex-1">
-              <Text className="font-semibold text-base text-main">
+              <Text className="font-semibold text-lg text-main">
                 {item.username}
               </Text>
-              <Text className="text-sm text-muted">{item.email}</Text>
+              <Text className="text-base text-muted">{item.email}</Text>
             </View>
 
             <Ionicons

@@ -25,12 +25,12 @@ const AuthProvidersView = ({
         {/* App Branding Section */}
         <View className="items-center mb-8">
           {/* App Name */}
-          <Text className="text-4xl font-semibold text-secondary-700 dark:text-secondary-300 mb-2 uppercase tracking-widest">
+          <Text className="text-5xl font-semibold text-secondary-700 dark:text-secondary-300 mb-2 uppercase leading-loose tracking-wide">
             Whis<Text className="text-primary-500 font-bold">purr</Text>
           </Text>
 
           {/* App Description */}
-          <Text className="text-lg text-secondary-500 dark:text-secondary-400 text-center mb-8">
+          <Text className="text-xl text-secondary-500 dark:text-secondary-400 text-center mb-8">
             Secure messaging for your conversations
           </Text>
 
@@ -44,7 +44,7 @@ const AuthProvidersView = ({
 
         {/* Continue With Section */}
         <View className="mb-6 self-stretch">
-          <Text className="text-lg font-semibold text-gray-700 dark:text-gray-300 text-center mb-6">
+          <Text className="text-xl font-semibold text-gray-700 dark:text-gray-300 text-center mb-6">
             Continue With
           </Text>
 
@@ -64,7 +64,7 @@ const AuthProvidersView = ({
                   size={24}
                   color={ThemeColors.primary.main}
                 />
-                <Text className="text-primary-500 text-lg font-semibold">
+                <Text className="text-primary-500 text-xl font-semibold">
                   Sign in with Email
                 </Text>
               </View>
@@ -74,7 +74,7 @@ const AuthProvidersView = ({
 
         {/* Terms and Conditions */}
         <View className="items-center">
-          <Text className="text-sm text-gray-500 text-center leading-5">
+          <Text className="text-base text-gray-500 text-center leading-5">
             By continuing, you agree to our{" "}
             <Text
               className="text-primary-500 dark:text-primary-300 underline"

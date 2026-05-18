@@ -147,7 +147,7 @@ const ConversationContextModal = ({
                   />
                 )}
                 <Text
-                  className={`text-base font-medium ${
+                  className={`text-lg font-medium ${
                     action.danger
                       ? "text-red-500"
                       : "text-gray-900 dark:text-gray-100"

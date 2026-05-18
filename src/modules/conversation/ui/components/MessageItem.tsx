@@ -325,13 +325,13 @@ const MessageItem = ({
   const getStatusIcon = (status: Message["status"]) => {
     switch (status) {
       case "sending":
-        return <Ionicons name="time-outline" size={12} color={colors.text} />;
+        return <Ionicons name="time-outline" size={12} color="rgba(255,255,255,0.7)" />;
       case "sent":
-        return <Ionicons name="checkmark" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark" size={12} color="rgba(255,255,255,0.7)" />;
       case "delivered":
-        return <Ionicons name="checkmark-done" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark-done" size={12} color="rgba(255,255,255,0.7)" />;
       case "read":
-        return <Ionicons name="checkmark-done" size={12} color={colors.text} />;
+        return <Ionicons name="checkmark-done" size={12} color="rgba(255,255,255,0.7)" />;
       default:
         return null;
     }
@@ -356,7 +356,7 @@ const MessageItem = ({
           }`}
         >
           <Text
-            className={`text-xs font-medium mb-1 ${
+            className={`text-sm font-medium mb-1 ${
               isFromOtherUser
                 ? "text-secondary-500 dark:text-secondary-300"
                 : "text-white/70"
@@ -368,7 +368,7 @@ const MessageItem = ({
               : otherUser?.username}
           </Text>
           <Text
-            className={`text-sm ${
+            className={`text-base ${
               isFromOtherUser
                 ? "text-secondary-600 dark:text-secondary-200"
                 : "text-white/80"
@@ -382,7 +382,7 @@ const MessageItem = ({
       )}
 
       <Text
-        className={`text-lg leading-5 font-medium ${
+        className={`text-xl leading-5 font-medium ${
           isFromOtherUser
             ? "text-secondary-800 dark:text-secondary-50"
             : "text-white"
@@ -398,8 +398,8 @@ const MessageItem = ({
         }`}
       >
         <Text
-          className={`text-xs font-light ${
-            isFromOtherUser ? "text-secondary-200" : "text-secondary-50"
+          className={`text-sm font-light ${
+            isFromOtherUser ? "text-secondary-500 dark:text-secondary-200" : "text-white/70"
           }`}
         >
           {formatTime(message._creationTime, "time")}
@@ -422,7 +422,7 @@ const MessageItem = ({
 
   const renderReactionsBar = () => (
     <View className="bg-white dark:bg-gray-800/90 rounded-full px-6 py-3 shadow-lg">
-      <Text className="text-center text-sm text-gray-500 dark:text-gray-400 mb-2">
+      <Text className="text-center text-base text-gray-500 dark:text-gray-400 mb-2">
         Tap or pick an emoji to react
       </Text>
       <View className="flex-row items-center justify-between">
@@ -465,7 +465,7 @@ const MessageItem = ({
             style={{ marginRight: 12 }}
           />
           <Text
-            className={`text-base ${
+            className={`text-lg ${
               option.danger
                 ? "text-red-500"
                 : "text-gray-900 dark:text-gray-100"
@@ -497,7 +497,7 @@ const MessageItem = ({
                   style={{ width: "100%", height: "100%" }}
                 />
               ) : (
-                <Text className="font-bold text-primary-700 text-lg">
+                <Text className="font-bold text-primary-700 text-xl">
                   {otherUser?.username?.charAt(0).toUpperCase()}
                 </Text>
               )}

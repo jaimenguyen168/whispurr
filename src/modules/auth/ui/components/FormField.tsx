@@ -65,7 +65,7 @@ const FormField = ({
         )}
       </View>
 
-      {error && <Text className="text-red-500 text-sm mt-1">{error}</Text>}
+      {error && <Text className="text-red-500 text-base mt-1">{error}</Text>}
     </View>
   );
 };

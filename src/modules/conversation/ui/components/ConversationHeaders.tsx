@@ -48,7 +48,7 @@ export const ConversationHeader1 = ({
                 style={{ width: "100%", height: "100%" }}
               />
             ) : (
-              <Text className="font-bold text-primary-700 text-xl">
+              <Text className="font-bold text-primary-700 text-2xl">
                 {user.username?.charAt(0).toUpperCase()}
               </Text>
             )}
@@ -56,13 +56,13 @@ export const ConversationHeader1 = ({
 
           <View className="flex-1 min-w-0 overflow-hidden">
             <Text
-              className="font-bold text-accent text-lg"
+              className="font-bold text-accent text-xl"
               numberOfLines={1}
               ellipsizeMode="tail"
             >
               {user.username}
             </Text>
-            <Text className="text-sm text-muted">Active 10m ago</Text>
+            <Text className="text-base text-muted">Active 10m ago</Text>
           </View>
         </View>
       </View>
@@ -152,8 +152,8 @@ export const ConversationHeader2 = ({
           <Ionicons name="chevron-back" size={28} color={colors.text} />
         </TouchableOpacity>
         <View className="flex-1 items-center">
-          <Text className="font-bold text-accent text-lg">{user.username}</Text>
-          <Text className="text-sm text-muted">Active 10m ago</Text>
+          <Text className="font-bold text-accent text-xl">{user.username}</Text>
+          <Text className="text-base text-muted">Active 10m ago</Text>
         </View>
 
         <View className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400 pb-2">

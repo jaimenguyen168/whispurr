@@ -76,7 +76,7 @@ const CallView = ({ callId, callType }: CallViewProps) => {
       <SafeAreaView className="flex-1 bg-black">
         <View className="flex-1 items-center justify-center gap-4">
           <ActivityIndicator size="large" color="white" />
-          <Text className="mt-2 text-base text-white">Starting call...</Text>
+          <Text className="mt-2 text-lg text-white">Starting call...</Text>
         </View>
       </SafeAreaView>
     );
@@ -140,7 +140,7 @@ function CustomOutgoingControls({
   return (
     <View className="items-center gap-3 pb-12">
       <View className="bg-white/10 rounded-2xl px-6 py-2">
-        <Text className="text-white/60 text-sm">Tap to cancel</Text>
+        <Text className="text-white/60 text-base">Tap to cancel</Text>
       </View>
       <HangUpCallButton size={100} onHangupCallHandler={onHangupCallHandler} />
     </View>
@@ -155,11 +155,11 @@ function CustomIncomingControls({
     <View className="flex-row justify-around items-center px-12 pb-12">
       <View className="items-center gap-3">
         <RejectCallButton size={72} onRejectCallHandler={onRejectCallHandler} />
-        <Text className="text-white text-sm font-medium">Decline</Text>
+        <Text className="text-white text-base font-medium">Decline</Text>
       </View>
       <View className="items-center gap-3">
         <AcceptCallButton onAcceptCallHandler={onAcceptCallHandler} />
-        <Text className="text-white text-sm font-medium">Accept</Text>
+        <Text className="text-white text-base font-medium">Accept</Text>
       </View>
     </View>
   );
@@ -175,25 +175,25 @@ function CustomCallControls({ onHangupCallHandler }: CallControlProps) {
       {/* Mic toggle */}
       <View className="items-center gap-2">
         <ToggleAudioPublishingButton />
-        <Text className="text-white text-xs">Mic</Text>
+        <Text className="text-white text-sm">Mic</Text>
       </View>
 
       {/* Hang up — center, larger, red */}
       <View className="items-center gap-2">
         <HangUpCallButton size={72} onHangupCallHandler={onHangupCallHandler} />
-        <Text className="text-white text-xs">End</Text>
+        <Text className="text-white text-sm">End</Text>
       </View>
 
       {/* Camera toggle */}
       <View className="items-center gap-2">
         <ToggleVideoPublishingButton />
-        <Text className="text-white text-xs">Camera</Text>
+        <Text className="text-white text-sm">Camera</Text>
       </View>
 
       {/* Flip camera */}
       <View className="items-center gap-2">
         <ToggleCameraFaceButton backgroundColor="#374151" />
-        <Text className="text-white text-xs">Flip</Text>
+        <Text className="text-white text-sm">Flip</Text>
       </View>
     </View>
   );
@@ -204,14 +204,14 @@ function ErrorCallUI({ error }: { error: string }) {
     <SafeAreaView className="flex-1 bg-black">
       <View className="flex-1 items-center justify-center gap-4">
         <Ionicons name="alert-circle-outline" size={48} color="#ef4444" />
-        <Text className="mt-2 text-base text-white text-center px-8">
+        <Text className="mt-2 text-lg text-white text-center px-8">
           {error}
         </Text>
         <Pressable
           className="mt-4 rounded-xl bg-white px-6 py-3"
           onPress={() => router.back()}
         >
-          <Text className="text-base font-semibold text-black">Go Back</Text>
+          <Text className="text-lg font-semibold text-black">Go Back</Text>
         </Pressable>
       </View>
     </SafeAreaView>

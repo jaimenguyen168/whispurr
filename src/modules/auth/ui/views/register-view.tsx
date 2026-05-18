@@ -134,7 +134,7 @@ const RegisterView = () => {
           {/* Logo Section */}
           <View className="items-center my-8">
             {/* App Name */}
-            <Text className="text-4xl font-semibold text-secondary-700 mb-2 uppercase tracking-widest">
+            <Text className="text-5xl font-semibold text-secondary-700 mb-2 uppercase leading-loose tracking-wide">
               Whis<Text className="text-primary-500 font-bold">purr</Text>
             </Text>
 
@@ -148,14 +148,14 @@ const RegisterView = () => {
 
           {/* Form Section */}
           <View className="flex-1">
-            <Text className="text-2xl font-semibold text-secondary-700 text-center mb-4">
+            <Text className="text-3xl font-semibold text-secondary-700 text-center mb-4">
               Create Account
             </Text>
 
             {/* General Error Message */}
             {errors.general && (
               <View className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-                <Text className="text-red-600 text-sm font-medium">
+                <Text className="text-red-600 text-base font-medium">
                   {errors.general}
                 </Text>
               </View>
@@ -205,7 +205,7 @@ const RegisterView = () => {
             />
 
             <View className="flex-row items-center justify-end mb-4 -mt-4">
-              <Text className="text-red-500 font-light text-xs">
+              <Text className="text-red-500 font-light text-sm">
                 (*) Required
               </Text>
             </View>

@@ -86,12 +86,12 @@ const MessageInput = ({
                 color={colors.accent}
                 style={{ marginRight: 6 }}
               />
-              <Text className="text-sm font-medium text-accent">
+              <Text className="text-base font-medium text-accent">
                 Replying to {getReplyToUsername()}
               </Text>
             </View>
             <Text
-              className="text-sm text-secondary-600 dark:text-secondary-400"
+              className="text-base text-secondary-600 dark:text-secondary-400"
               numberOfLines={2}
               ellipsizeMode="tail"
             >
