@@ -1,26 +1,29 @@
-import { View, Text, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  Alert,
+  Pressable,
+  Dimensions,
+} from "react-native";
 import React, { useRef, useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import { Image } from "expo-image";
-import { Ionicons, AntDesign } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { formatTime } from "@/src/utils/time";
 import { ConversationWithDetails } from "@/src/types/convex";
-import ReanimatedSwipeable, {
-  SwipeableMethods,
-} from "react-native-gesture-handler/ReanimatedSwipeable";
-import Reanimated, {
-  Easing,
+import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  SharedValue,
 } from "react-native-reanimated";
-import { scheduleOnRN } from "react-native-worklets";
-import SwipeAction from "@/src/components/SwipeAction";
 import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
 import { useConversationKey } from "@/src/hooks/useConversationKey";
+import ConversationContextModal, {
+  ConversationContextAction,
+} from "@/src/modules/chats/ui/components/ConversationContextModal";
+import ReportModal from "@/src/modules/conversation/ui/components/ReportModal";
 
 interface ConversationItemProps {
   conversation: ConversationWithDetails;
@@ -28,23 +31,31 @@ interface ConversationItemProps {
   clerkUserId: string;
 }
 
-const THRESHOLD = 50;
+const { height: screenHeight, width: screenWidth } = Dimensions.get("window");
 
 const ConversationItem = ({
   conversation,
   currentUserId,
-  clerkUserId,
 }: ConversationItemProps) => {
-  const reanimatedRef = useRef<SwipeableMethods>(null);
-  const heightAnim = useSharedValue(80);
-  const opacityAnim = useSharedValue(1);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const itemRef = useRef<View>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [itemLayout, setItemLayout] = useState({
+    x: 0,
+    y: screenHeight * 0.35,
+    width: screenWidth,
+    height: 80,
+  });
   const [decryptedLastMessage, setDecryptedLastMessage] = useState("");
+
+  const scale = useSharedValue(1);
+  const translateY = useSharedValue(0);
+  const originalOpacity = useSharedValue(1);
 
   const conversationKey = useConversationKey(conversation._id);
 
   const otherParticipantRecord = conversation.allParticipants?.find(
-    (participant) => participant.userId !== currentUserId,
+    (p) => p.userId !== currentUserId,
   );
   const otherParticipantId = otherParticipantRecord?.userId;
 
@@ -53,25 +64,25 @@ const ConversationItem = ({
     otherParticipantId ? { userId: otherParticipantId } : "skip",
   );
 
-  // Fetch the last message to get its iv
-  const messages = useQuery(api.functions.messages.getMessagesForConversation, {
-    conversationId: conversation._id,
-  });
+  const messages = useQuery(
+    api.functions.messages.getMessagesForConversation,
+    { conversationId: conversation._id },
+  );
   const lastMessage = messages?.[messages.length - 1];
 
   const deleteConversation = useMutation(
     api.functions.conversations.leaveConversation,
   );
+  const pinConversation = useMutation(
+    api.functions.conversations.pinConversation,
+  );
 
   useEffect(() => {
-    const decryptLastMessage = async () => {
-      if (!conversationKey) return;
-
-      if (!lastMessage?.content || !lastMessage?.iv) {
+    const run = async () => {
+      if (!conversationKey || !lastMessage?.content || !lastMessage?.iv) {
         setDecryptedLastMessage("");
         return;
       }
-
       try {
         const decrypted = await decryptMessage(
           lastMessage.content,
@@ -79,161 +90,209 @@ const ConversationItem = ({
           lastMessage.iv,
         );
         setDecryptedLastMessage(decrypted);
-      } catch (error) {
-        console.error("[ConversationItem] Decrypt error:", error);
+      } catch {
         setDecryptedLastMessage("Unable to decrypt message");
       }
     };
-
-    decryptLastMessage();
+    run();
   }, [lastMessage?._id, lastMessage?.iv, conversationKey]);
 
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      height: heightAnim.value,
-      opacity: opacityAnim.value,
-    };
-  });
+  const animatedItemStyle = useAnimatedStyle(() => ({
+    opacity: originalOpacity.value,
+    transform: [{ scale: scale.value }],
+  }));
 
-  // Extracted delete logic
-  const executeDelete = async () => {
-    if (isDeleting) return;
-    setIsDeleting(true);
+  const isPinned = !!conversation.userParticipant?.pinnedAt;
 
+  // ─── Long press ─────────────────────────────────────────────────
+
+  const handleLongPress = async () => {
+    const layout = await new Promise<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }>((resolve) => {
+      if (itemRef.current) {
+        itemRef.current.measureInWindow((x, y, width, height) => {
+          resolve({ x, y, width, height });
+        });
+      } else {
+        resolve({ x: 0, y: screenHeight * 0.35, width: screenWidth, height: 80 });
+      }
+    });
+
+    setItemLayout(layout);
+
+    const targetY = screenHeight * 0.35;
+    const moveUpDistance = targetY - layout.y;
+
+    scale.value = withTiming(0.97, { duration: 150 });
+    originalOpacity.value = withTiming(0.3, { duration: 150 });
+
+    setTimeout(() => {
+      scale.value = withTiming(1.02, { duration: 250 });
+      translateY.value = withTiming(moveUpDistance, { duration: 300 });
+      setShowModal(true);
+    }, 150);
+  };
+
+  const handleCloseModal = () => {
+    scale.value = withTiming(1, { duration: 250 });
+    translateY.value = withTiming(0, { duration: 250 });
+    originalOpacity.value = withTiming(1, { duration: 250 });
+    setTimeout(() => setShowModal(false), 250);
+  };
+
+  // ─── Actions ────────────────────────────────────────────────────
+
+  const handleOpen = () => {
+    handleCloseModal();
+    setTimeout(() => router.push(`/(chat)/${conversation._id}`), 300);
+  };
+
+  const handlePin = async () => {
+    handleCloseModal();
     try {
-      await deleteConversation({ conversationId: conversation._id });
-      console.log("Conversation deleted successfully");
+      await pinConversation({ conversationId: conversation._id });
     } catch (error) {
-      console.error("Failed to delete conversation:", error);
-      heightAnim.value = withTiming(80, {
-        duration: 300,
-        easing: Easing.inOut(Easing.ease),
-      });
-      opacityAnim.value = withTiming(1, {
-        duration: 300,
-        easing: Easing.inOut(Easing.ease),
-      });
-      setIsDeleting(false);
-      reanimatedRef.current?.close();
+      console.error("Failed to pin conversation:", error);
     }
   };
 
-  const showDeleteConfirmation = () => {
-    Alert.alert(
-      "Delete Conversation",
-      `Are you sure you want to delete this conversation with ${otherParticipant?.username}? This action cannot be undone.`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-          onPress: () => {
-            // Close the swipeable when cancelled
-            reanimatedRef.current?.close();
+  const handleReport = () => {
+    handleCloseModal();
+    setTimeout(() => setShowReportModal(true), 350);
+  };
+
+  const handleDelete = () => {
+    handleCloseModal();
+    setTimeout(() => {
+      Alert.alert(
+        "Delete Conversation",
+        `Are you sure you want to delete this conversation with ${otherParticipant?.username}? This action cannot be undone.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteConversation({ conversationId: conversation._id });
+              } catch {
+                Alert.alert("Error", "Failed to delete conversation.");
+              }
+            },
           },
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            // Start the delete animation
-            heightAnim.value = withTiming(0, {
-              duration: 300,
-              easing: Easing.inOut(Easing.ease),
-            });
-            opacityAnim.value = withTiming(
-              0,
-              {
-                duration: 300,
-                easing: Easing.inOut(Easing.ease),
-              },
-              (finished) => {
-                if (finished) {
-                  scheduleOnRN(executeDelete);
-                }
-              },
-            );
-          },
-        },
-      ],
-    );
+        ],
+      );
+    }, 350);
   };
 
-  const onSwipeableOpen = () => {
-    showDeleteConfirmation();
-  };
+  const actions: ConversationContextAction[] = [
+    {
+      icon: "arrow-forward-circle-outline",
+      label: "Open",
+      action: handleOpen,
+    },
+    {
+      icon: "pushpin",
+      iconLib: "antdesign",
+      label: isPinned ? "Unpin conversation" : "Pin conversation",
+      action: handlePin,
+    },
+    {
+      icon: "flag-outline",
+      label: "Report",
+      action: handleReport,
+    },
+    {
+      icon: "trash-outline",
+      label: "Delete",
+      action: handleDelete,
+      danger: true,
+    },
+  ];
 
-  const renderRightActions = (
-    progress: SharedValue<number>,
-    translation: SharedValue<number>,
-    swipeableMethods: SwipeableMethods,
-  ) => {
-    return (
-      <SwipeAction threshold={THRESHOLD} prog={progress} drag={translation} />
-    );
-  };
+  // ─── Render ─────────────────────────────────────────────────────
 
-  if (!otherParticipantId || !otherParticipant || isDeleting) {
-    return null;
-  }
+  const renderItemContent = () => (
+    <View className="flex-row items-center py-3 px-4">
+      <View className="rounded-full items-center justify-center size-12 bg-primary-100 mr-3 overflow-hidden">
+        {otherParticipant?.imageUrl ? (
+          <Image
+            source={otherParticipant.imageUrl}
+            style={{ width: "100%", height: "100%" }}
+          />
+        ) : (
+          <Text className="font-bold text-primary-700 text-lg">
+            {otherParticipant?.username?.charAt(0).toUpperCase()}
+          </Text>
+        )}
+      </View>
 
-  return (
-    <Reanimated.View style={animatedStyle}>
-      <ReanimatedSwipeable
-        ref={reanimatedRef}
-        friction={2}
-        enableTrackpadTwoFingerGesture
-        rightThreshold={THRESHOLD}
-        renderRightActions={renderRightActions}
-        onSwipeableOpen={onSwipeableOpen}
-      >
-        <TouchableOpacity
-          className="flex-row items-center py-2 px-6 bg-transparent"
-          activeOpacity={0.7}
-          onPress={() => router.push(`/(chat)/${conversation._id}`)}
-        >
-          {/* Avatar */}
-          <View className="rounded-full items-center justify-center size-12 bg-primary-100 mr-3 overflow-hidden">
-            {otherParticipant.imageUrl ? (
-              <Image
-                source={otherParticipant.imageUrl}
-                style={{ width: "100%", height: "100%" }}
-              />
-            ) : (
-              <Text className="font-bold text-primary-700 text-lg">
-                {otherParticipant.username?.charAt(0).toUpperCase()}
-              </Text>
-            )}
-          </View>
-
-          {/* Content */}
-          <View className="flex-1">
-            <View className="flex-row justify-between items-center mb-1">
-              <Text className="font-bold text-base text-main">
-                {otherParticipant.username}
-              </Text>
-              <View className="flex-row items-center gap-2">
-                {conversation.userParticipant?.pinnedAt && (
-                  <AntDesign name="pushpin" size={12} color="#40916c" />
-                )}
-                <Text className="text-xs text-muted">
-                  {formatTime(conversation.lastMessageAt)}
-                </Text>
-              </View>
-            </View>
-
-            <Text
-              className="text-sm text-secondary"
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {decryptedLastMessage
-                ? `${lastMessage?.senderId === currentUserId ? "You: " : ""}${decryptedLastMessage}`
-                : "No messages yet"}
+      <View className="flex-1">
+        <View className="flex-row justify-between items-center mb-1">
+          <Text className="font-bold text-base text-main">
+            {otherParticipant?.username}
+          </Text>
+          <View className="flex-row items-center gap-2">
+            {isPinned && <AntDesign name="pushpin" size={12} color="#40916c" />}
+            <Text className="text-xs text-muted">
+              {formatTime(conversation.lastMessageAt)}
             </Text>
           </View>
-        </TouchableOpacity>
-      </ReanimatedSwipeable>
-    </Reanimated.View>
+        </View>
+
+        <Text
+          className="text-sm text-secondary"
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {decryptedLastMessage
+            ? `${lastMessage?.senderId === currentUserId ? "You: " : ""}${decryptedLastMessage}`
+            : "No messages yet"}
+        </Text>
+      </View>
+    </View>
+  );
+
+  if (!otherParticipantId || !otherParticipant) return null;
+
+  return (
+    <>
+      <View ref={itemRef}>
+        <Pressable
+          onPress={() => router.push(`/(chat)/${conversation._id}`)}
+          onLongPress={handleLongPress}
+          delayLongPress={300}
+        >
+          <Animated.View style={animatedItemStyle} className="bg-transparent px-2">
+            {renderItemContent()}
+          </Animated.View>
+        </Pressable>
+      </View>
+
+      <ConversationContextModal
+        visible={showModal}
+        itemLayout={itemLayout}
+        scale={scale}
+        translateY={translateY}
+        onClose={handleCloseModal}
+        actions={actions}
+        renderItem={renderItemContent}
+      />
+
+      {otherParticipant && (
+        <ReportModal
+          visible={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportedUserId={otherParticipant._id}
+          reportedUsername={otherParticipant.username}
+          conversationId={conversation._id}
+        />
+      )}
+    </>
   );
 };
 

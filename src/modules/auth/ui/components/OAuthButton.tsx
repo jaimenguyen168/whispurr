@@ -9,6 +9,7 @@ import {
   Image,
   Text,
   ActivityIndicator,
+  useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { OAuthProvider } from "@/src/modules/auth/types/oauth";
@@ -35,8 +36,10 @@ const OAuthButton = ({ provider, disabled = false }: OAuthButtonProps) => {
   useWarmUpBrowser();
   const { startSSOFlow } = useSSO();
   const [isLoading, setIsLoading] = useState(false);
+  const scheme = useColorScheme();
 
   const config = oauthConfigs[provider];
+  const iconColor = scheme === "dark" ? "#f8f9fa" : config.iconColor;
 
   const onPress = useCallback(async () => {
     if (disabled || isLoading) return;
@@ -87,7 +90,7 @@ const OAuthButton = ({ provider, disabled = false }: OAuthButtonProps) => {
         {isLoading ? (
           <ActivityIndicator
             size="small"
-            color={config.iconColor || config.textColor}
+            color={iconColor}
           />
         ) : (
           <>
@@ -97,7 +100,7 @@ const OAuthButton = ({ provider, disabled = false }: OAuthButtonProps) => {
               <Ionicons
                 name={config.ionIcon}
                 size={24}
-                color={config.iconColor}
+                color={iconColor}
               />
             ) : null}
           </>

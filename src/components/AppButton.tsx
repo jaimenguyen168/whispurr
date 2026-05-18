@@ -21,7 +21,7 @@ const AppButton = ({
       case "secondary":
         return "bg-secondary-400";
       case "outline":
-        return "bg-secondary-50 border border-secondary-400";
+        return "bg-secondary-50 dark:bg-secondary-700 border border-secondary-300 dark:border-secondary-600";
       default:
         return "bg-primary-600";
     }

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Image } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icons } from "@/src/constants/Icons";
@@ -20,17 +20,17 @@ const AuthProvidersView = ({
   const { whispurrIcon } = Icons;
 
   return (
-    <SafeAreaView className="flex-1 bg-secondary-50">
-      <View className="flex-1 justify-center px-6 pt-32">
+    <SafeAreaView className="flex-1 bg-app">
+      <View className="flex-1 justify-center items-center px-6">
         {/* App Branding Section */}
         <View className="items-center mb-8">
           {/* App Name */}
-          <Text className="text-4xl font-semibold  text-secondary-700 mb-2 uppercase tracking-widest">
+          <Text className="text-4xl font-semibold text-secondary-700 dark:text-secondary-300 mb-2 uppercase tracking-widest">
             Whis<Text className="text-primary-500 font-bold">purr</Text>
           </Text>
 
           {/* App Description */}
-          <Text className="text-lg text-secondary-500 text-center mb-8">
+          <Text className="text-lg text-secondary-500 dark:text-secondary-400 text-center mb-8">
             Secure messaging for your conversations
           </Text>
 
@@ -43,17 +43,14 @@ const AuthProvidersView = ({
         </View>
 
         {/* Continue With Section */}
-        <View className="mb-8 flex-1">
-          <Text className="text-lg font-semibold text-gray-700 text-center mb-6">
+        <View className="mb-6 self-stretch">
+          <Text className="text-lg font-semibold text-gray-700 dark:text-gray-300 text-center mb-6">
             Continue With
           </Text>
 
           {/* OAuth Buttons */}
-
-          {/* OAuth Buttons */}
-          <View className="flex-1 gap-4">
+          <View className="gap-4">
             <OAuthButton provider="google" disabled={disabled} />
-            <OAuthButton provider="apple" disabled={disabled} />
 
             {/* Email Login Button using AppButton */}
             <AppButton
@@ -76,11 +73,22 @@ const AuthProvidersView = ({
         </View>
 
         {/* Terms and Conditions */}
-        <View className="items-center flex-1 mt-8">
+        <View className="items-center">
           <Text className="text-sm text-gray-500 text-center leading-5">
             By continuing, you agree to our{" "}
-            <Text className="text-blue-600 underline">Terms of Service</Text>{" "}
-            and <Text className="text-blue-600 underline">Privacy Policy</Text>
+            <Text
+              className="text-primary-500 dark:text-primary-300 underline"
+              onPress={() => router.push("/terms")}
+            >
+              Terms of Service
+            </Text>
+            {" "}and{" "}
+            <Text
+              className="text-primary-500 dark:text-primary-300 underline"
+              onPress={() => router.push("/privacy")}
+            >
+              Privacy Policy
+            </Text>
           </Text>
         </View>
       </View>
