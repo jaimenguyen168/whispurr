@@ -6,9 +6,30 @@ import {
   Pressable,
   Dimensions,
   Alert,
+  Linking,
 } from "react-native";
 
 const MEDIA_WIDTH = Dimensions.get("window").width * 0.65;
+
+const URL_REGEX = /https?:\/\/[^\s]+/g;
+
+function parseMessageSegments(text: string): { type: "text" | "url"; value: string }[] {
+  const segments: { type: "text" | "url"; value: string }[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  URL_REGEX.lastIndex = 0;
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: "text", value: text.slice(lastIndex, match.index) });
+    }
+    segments.push({ type: "url", value: match[0] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    segments.push({ type: "text", value: text.slice(lastIndex) });
+  }
+  return segments;
+}
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -409,7 +430,20 @@ const MessageItem = ({
             }`}
             style={{ flexShrink: 1 }}
           >
-            {decryptedContent}
+            {parseMessageSegments(decryptedContent).map((seg, i) =>
+              seg.type === "url" ? (
+                <Text
+                  key={i}
+                  className={isFromOtherUser ? "text-primary-500 dark:text-primary-300" : "text-white"}
+                  style={{ textDecorationLine: "underline" }}
+                  onPress={() => Linking.openURL(seg.value)}
+                >
+                  {seg.value}
+                </Text>
+              ) : (
+                <Text key={i}>{seg.value}</Text>
+              )
+            )}
           </Text>
 
           <View

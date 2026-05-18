@@ -161,8 +161,8 @@ const MessageInput = ({
         <TextInput
           value={message}
           onChangeText={onMessageChange}
-          autoCorrect={false}
-          autoCapitalize="none"
+          autoCorrect={true}
+          autoCapitalize="sentences"
           placeholder={updatedPlaceholder}
           className="flex-1 rounded-2xl bg-surface p-4 text-secondary"
           placeholderTextColor={colors.muted}

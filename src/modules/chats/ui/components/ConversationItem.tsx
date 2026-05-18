@@ -72,7 +72,19 @@ const ConversationItem = ({
 
   useEffect(() => {
     const run = async () => {
-      if (!conversationKey || !lastMessage?.content || !lastMessage?.iv) {
+      if (!lastMessage) {
+        setDecryptedLastMessage("");
+        return;
+      }
+      if (lastMessage.type === "image") {
+        setDecryptedLastMessage("📷 Sent an image");
+        return;
+      }
+      if (lastMessage.type === "gif") {
+        setDecryptedLastMessage("🎬 Sent a GIF");
+        return;
+      }
+      if (!conversationKey || !lastMessage.content || !lastMessage.iv) {
         setDecryptedLastMessage("");
         return;
       }
@@ -88,7 +100,7 @@ const ConversationItem = ({
       }
     };
     run();
-  }, [lastMessage?._id, lastMessage?.iv, conversationKey]);
+  }, [lastMessage?._id, lastMessage?.iv, lastMessage?.type, conversationKey]);
 
   const animatedItemStyle = useAnimatedStyle(() => ({
     opacity: originalOpacity.value,
