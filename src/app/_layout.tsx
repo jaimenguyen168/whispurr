@@ -23,8 +23,11 @@ import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 import "react-native-get-random-values";
 import * as ExpoStandardWebCrypto from "expo-standard-web-crypto";
 import { StreamVideoProvider } from "@/src/providers/StreamVideoProvider";
+import { GiphySDK } from "@giphy/react-native-sdk";
 
 ExpoStandardWebCrypto.polyfillWebCrypto();
+
+GiphySDK.configure({ apiKey: process.env.EXPO_PUBLIC_GIPHY_API_KEY! });
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,

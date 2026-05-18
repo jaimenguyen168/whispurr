@@ -28,12 +28,17 @@ export const getMessagesForConversation = query({
 
     return await Promise.all(
       messages.map(async (message) => {
+        const imageUrl = message.storageId
+          ? await ctx.storage.getUrl(message.storageId)
+          : message.gifUrl ?? undefined;
+
         if (message.replyToMessageId) {
           const originalMessage = await ctx.db.get(message.replyToMessageId);
 
           if (originalMessage && !originalMessage.deletedAt) {
             return {
               ...message,
+              imageUrl,
               replyTo: {
                 _id: originalMessage._id,
                 content: originalMessage.content,
@@ -44,7 +49,7 @@ export const getMessagesForConversation = query({
             };
           }
         }
-        return message;
+        return { ...message, imageUrl };
       }),
     );
   },
@@ -55,7 +60,9 @@ export const createMessage = mutation({
     conversationId: v.id("conversations"),
     content: v.string(),
     iv: v.string(),
-    type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
+    type: v.union(v.literal("text"), v.literal("image"), v.literal("file"), v.literal("gif")),
+    storageId: v.optional(v.id("_storage")),
+    gifUrl: v.optional(v.string()),
     replyToMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
@@ -85,13 +92,20 @@ export const createMessage = mutation({
       content: args.content,
       iv: args.iv,
       type: args.type,
+      storageId: args.storageId,
+      gifUrl: args.gifUrl,
       replyToMessageId: args.replyToMessageId,
       status: "sent",
       updatedAt: Date.now(),
     });
 
+    const lastMessagePreview =
+      args.type === "image" ? "📷 Photo" :
+      args.type === "gif" ? "🎬 GIF" :
+      args.content;
+
     await ctx.db.patch(args.conversationId, {
-      lastMessage: args.content,
+      lastMessage: lastMessagePreview,
       lastMessageAt: Date.now(),
       lastMessageBy: sender._id,
       updatedAt: Date.now(),

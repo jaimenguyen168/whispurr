@@ -28,9 +28,11 @@ export const conversationParticipants = defineTable({
 export const messages = defineTable({
   conversationId: v.id("conversations"),
   senderId: v.id("users"),
-  content: v.string(), // AES-256-CBC encrypted content
-  iv: v.string(), // IV for this specific message
-  type: v.union(v.literal("text"), v.literal("image"), v.literal("file")),
+  content: v.string(), // AES-256-CBC encrypted content (empty string for image messages)
+  iv: v.string(), // IV for this specific message (empty string for image messages)
+  type: v.union(v.literal("text"), v.literal("image"), v.literal("file"), v.literal("gif")),
+  storageId: v.optional(v.id("_storage")),
+  gifUrl: v.optional(v.string()),
   status: v.union(
     v.literal("sending"),
     v.literal("sent"),

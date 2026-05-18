@@ -1,0 +1,7 @@
+allowBuilds:
+  '@clerk/shared': true
+  browser-tabs-lock: true
+  core-js: true
+  esbuild: true
+  react-native-nitro-modules: true
+  unrs-resolver: true

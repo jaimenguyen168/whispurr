@@ -7,6 +7,8 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
+
+const MEDIA_WIDTH = Dimensions.get("window").width * 0.65;
 import { Ionicons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
@@ -341,82 +343,102 @@ const MessageItem = ({
 
   const renderMessageContent = () => (
     <View
-      className={`rounded-3xl px-4 pt-4 pb-2 relative ${hasReactions ? "mt-3" : ""} ${
-        isFromOtherUser
-          ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-none"
-          : "bg-accent rounded-br-none"
+      className={`rounded-3xl relative ${hasReactions ? "mt-3" : ""} ${
+        message.type === "image" || message.type === "gif"
+          ? "overflow-hidden"
+          : `px-4 pt-4 pb-2 ${isFromOtherUser ? "bg-secondary-200 dark:bg-secondary-500 rounded-bl-none" : "bg-accent rounded-br-none"}`
       }`}
     >
-      {message.replyTo && decryptedReplyContent && (
-        <View
-          className={`mb-3 p-2 rounded-lg border-l-2 ${
-            isFromOtherUser
-              ? "bg-secondary-100/50 dark:bg-secondary-600/30 border-secondary-300 dark:border-secondary-400"
-              : "bg-white/10 border-white/30"
-          }`}
-        >
-          <Text
-            className={`text-sm font-medium mb-1 ${
-              isFromOtherUser
-                ? "text-secondary-500 dark:text-secondary-300"
-                : "text-white/70"
-            }`}
+      {(message.type === "image" || message.type === "gif") && (message as any).imageUrl ? (
+        <View style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}>
+          <Image
+            source={(message as any).imageUrl}
+            style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}
+            contentFit="cover"
+          />
+          <View
+            className={`absolute bottom-0 left-0 right-0 flex-row items-center px-3 py-1.5 ${isFromOtherUser ? "justify-start" : "justify-end"}`}
+            style={{ backgroundColor: "rgba(0,0,0,0.4)" }}
           >
-            Replying to{" "}
-            {message.replyTo.senderId === currentUser?._id
-              ? "yourself"
-              : otherUser?.username}
-          </Text>
-          <Text
-            className={`text-base ${
-              isFromOtherUser
-                ? "text-secondary-600 dark:text-secondary-200"
-                : "text-white/80"
-            }`}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {decryptedReplyContent}
-          </Text>
-        </View>
-      )}
-
-      <Text
-        className={`text-xl leading-5 font-medium ${
-          isFromOtherUser
-            ? "text-secondary-800 dark:text-secondary-50"
-            : "text-white"
-        }`}
-        style={{ flexShrink: 1 }}
-      >
-        {decryptedContent}
-      </Text>
-
-      <View
-        className={`flex-row items-center ${
-          isFromOtherUser ? "justify-start" : "justify-end"
-        }`}
-      >
-        <Text
-          className={`text-sm font-light ${
-            isFromOtherUser ? "text-secondary-500 dark:text-secondary-200" : "text-white/70"
-          }`}
-        >
-          {formatTime(message._creationTime, "time")}
-        </Text>
-
-        {!isFromOtherUser && (
-          <View className="ml-1 dark:text-secondary-50">
-            {getStatusIcon(message.status)}
+            <Text className="text-sm text-white/90">
+              {formatTime(message._creationTime, "time")}
+            </Text>
           </View>
-        )}
-      </View>
+        </View>
+      ) : (
+        <>
+          {message.replyTo && decryptedReplyContent && (
+            <View
+              className={`mb-3 p-2 rounded-lg border-l-2 ${
+                isFromOtherUser
+                  ? "bg-secondary-100/50 dark:bg-secondary-600/30 border-secondary-300 dark:border-secondary-400"
+                  : "bg-white/10 border-white/30"
+              }`}
+            >
+              <Text
+                className={`text-sm font-medium mb-1 ${
+                  isFromOtherUser
+                    ? "text-secondary-500 dark:text-secondary-300"
+                    : "text-white/70"
+                }`}
+              >
+                Replying to{" "}
+                {message.replyTo.senderId === currentUser?._id
+                  ? "yourself"
+                  : otherUser?.username}
+              </Text>
+              <Text
+                className={`text-base ${
+                  isFromOtherUser
+                    ? "text-secondary-600 dark:text-secondary-200"
+                    : "text-white/80"
+                }`}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {decryptedReplyContent}
+              </Text>
+            </View>
+          )}
 
-      <MessageReactionBadge
-        reactions={message.reactions}
-        className={`absolute -top-5 ${isFromOtherUser ? "-right-4" : "-left-4"}`}
-        animateIcon={recentReaction}
-      />
+          <Text
+            className={`text-xl leading-5 font-medium ${
+              isFromOtherUser
+                ? "text-secondary-800 dark:text-secondary-50"
+                : "text-white"
+            }`}
+            style={{ flexShrink: 1 }}
+          >
+            {decryptedContent}
+          </Text>
+
+          <View
+            className={`flex-row items-center ${
+              isFromOtherUser ? "justify-start" : "justify-end"
+            }`}
+          >
+            <Text
+              className={`text-sm font-light ${
+                isFromOtherUser ? "text-secondary-500 dark:text-secondary-200" : "text-white/70"
+              }`}
+            >
+              {formatTime(message._creationTime, "time")}
+            </Text>
+
+            {!isFromOtherUser && (
+              <View className="ml-1 dark:text-secondary-50">
+                {getStatusIcon(message.status)}
+              </View>
+            )}
+          </View>
+
+          <MessageReactionBadge
+            reactions={message.reactions}
+            className={`absolute -top-5 ${isFromOtherUser ? "-right-4" : "-left-4"}`}
+            animateIcon={recentReaction}
+          />
+        </>
+      )}
     </View>
   );
 

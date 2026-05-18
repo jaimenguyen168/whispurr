@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ConversationId, Message } from "@/src/types/convex";
+import * as ImagePicker from "expo-image-picker";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, {
   useAnimatedScrollHandler,
@@ -31,6 +32,7 @@ import { useConversationKey } from "@/src/hooks/useConversationKey";
 import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
 import ReportModal from "@/src/modules/conversation/ui/components/ReportModal";
 import { useStreamVideo } from "@/src/hooks/useStreamVideo";
+import { GiphyDialog, GiphyDialogEvent, GiphyContentType } from "@giphy/react-native-sdk";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -93,6 +95,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   );
 
   const createMessage = useMutation(api.functions.messages.createMessage);
+  const generateUploadUrl = useMutation(api.storage.generateUploadUrl);
 
   const sendMessage = async () => {
     if (!message.trim() || !currentUser || isSending || !clerkUserId) return;
@@ -123,6 +126,100 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
       console.error("Failed to send message:", error);
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const uploadAndSendImage = async (uri: string, mimeType?: string) => {
+    const uploadUrl = await generateUploadUrl();
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    const uploadResponse = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": mimeType ?? "image/jpeg" },
+      body: blob,
+    });
+    if (!uploadResponse.ok) throw new Error("Upload failed");
+    const { storageId } = await uploadResponse.json();
+    await createMessage({ conversationId, content: "", iv: "", type: "image", storageId });
+  };
+
+  const handlePickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Allow access to your photo library to send images.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      quality: 0.8,
+      allowsEditing: false,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    try {
+      await uploadAndSendImage(asset.uri, asset.mimeType ?? undefined);
+    } catch (error) {
+      console.error("Failed to send image:", error);
+      Alert.alert("Error", "Failed to send image. Please try again.");
+    }
+  };
+
+  const handlePickGif = () => {
+    GiphyDialog.configure({ mediaTypeConfig: [GiphyContentType.Gif] });
+    const subscription = GiphyDialog.addListener(
+      GiphyDialogEvent.MediaSelected,
+      async (e) => {
+        subscription.remove();
+        GiphyDialog.hide();
+        const gifUrl = e.media.data.images?.original?.url ?? e.media.url;
+        try {
+          await createMessage({
+            conversationId,
+            content: "",
+            iv: "",
+            type: "gif",
+            gifUrl,
+          });
+        } catch (error) {
+          console.error("Failed to send GIF:", error);
+          Alert.alert("Error", "Failed to send GIF. Please try again.");
+        }
+      },
+    );
+    GiphyDialog.addListener(GiphyDialogEvent.Dismissed, () => {
+      subscription.remove();
+    });
+    GiphyDialog.show();
+  };
+
+  const handleOpenCamera = async () => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required", "Allow access to your camera to take photos.");
+      return;
+    }
+    let result;
+    try {
+      result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        quality: 0.8,
+        allowsEditing: false,
+      });
+    } catch (error: any) {
+      if (error?.message?.includes("not available on simulator")) {
+        Alert.alert("Not available", "Camera is not available on the simulator.");
+      } else {
+        Alert.alert("Error", "Could not open camera. Please try again.");
+      }
+      return;
+    }
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    try {
+      await uploadAndSendImage(asset.uri, asset.mimeType ?? undefined);
+    } catch (error) {
+      console.error("Failed to send camera photo:", error);
+      Alert.alert("Error", "Failed to send photo. Please try again.");
     }
   };
 
@@ -325,7 +422,9 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           message={message}
           onMessageChange={setMessage}
           onSendMessage={sendMessage}
-          onAddAttachment={() => console.log("Add attachment")}
+          onPickImage={handlePickImage}
+          onOpenCamera={handleOpenCamera}
+          onPickGif={handlePickGif}
           disabled={isDeleting || isSending || hasOtherUserLeft}
           replyingToMessage={replyingToMessage}
           onCancelReply={() => setReplyingToMessage(null)}

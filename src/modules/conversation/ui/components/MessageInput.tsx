@@ -9,7 +9,9 @@ interface MessageInputProps {
   message: string;
   onMessageChange: (text: string) => void;
   onSendMessage: () => void;
-  onAddAttachment?: () => void;
+  onPickImage?: () => void;
+  onOpenCamera?: () => void;
+  onPickGif?: () => void;
   placeholder?: string;
   disabled?: boolean;
   replyingToMessage?: Message | null;
@@ -24,7 +26,9 @@ const MessageInput = ({
   message,
   onMessageChange,
   onSendMessage,
-  onAddAttachment,
+  onPickImage,
+  onOpenCamera,
+  onPickGif,
   placeholder = "Type a message",
   disabled = false,
   replyingToMessage,
@@ -36,6 +40,7 @@ const MessageInput = ({
 }: MessageInputProps) => {
   const colors = useThemeColors();
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
+  const [showAttachMenu, setShowAttachMenu] = useState(false);
 
   useEffect(() => {
     const decryptReplyContent = async () => {
@@ -61,11 +66,7 @@ const MessageInput = ({
 
   const getReplyToUsername = () => {
     if (!replyingToMessage || !currentUser) return "";
-
-    if (replyingToMessage.senderId === currentUser._id) {
-      return "yourself";
-    }
-
+    if (replyingToMessage.senderId === currentUser._id) return "yourself";
     return otherUser?.username || "Unknown user";
   };
 
@@ -73,8 +74,42 @@ const MessageInput = ({
     ? `Reply to ${getReplyToUsername()}...`
     : placeholder;
 
+  const handleAttachOption = (fn?: () => void) => {
+    setShowAttachMenu(false);
+    fn?.();
+  };
+
   return (
     <View className="bg-card pb-8 px-6 pt-4">
+      {/* Attachment Menu */}
+      {showAttachMenu && (
+        <View className="bg-surface rounded-2xl mb-3 overflow-hidden border border-soft">
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onPickImage)}
+          >
+            <Ionicons name="image-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">Photo Library</Text>
+          </TouchableOpacity>
+          <View className="h-px bg-soft mx-4" />
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onOpenCamera)}
+          >
+            <Ionicons name="camera-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">Camera</Text>
+          </TouchableOpacity>
+          <View className="h-px bg-soft mx-4" />
+          <TouchableOpacity
+            className="flex-row items-center gap-3 px-4 py-3.5"
+            onPress={() => handleAttachOption(onPickGif)}
+          >
+            <Ionicons name="film-outline" size={22} color={colors.accent} />
+            <Text className="text-base font-medium text-main">GIF</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Reply Context Bar */}
       {replyingToMessage && (
         <View className="bg-secondary-100 dark:bg-secondary-800 rounded-2xl px-4 py-3 mb-3 flex-row items-center justify-between">
@@ -113,10 +148,14 @@ const MessageInput = ({
       <View className="flex-row items-end gap-2 justify-between">
         <TouchableOpacity
           className="rounded-full items-center justify-center size-10"
-          onPress={onAddAttachment}
+          onPress={() => setShowAttachMenu((v) => !v)}
           disabled={disabled}
         >
-          <Ionicons name="add" size={32} color={colors.text} />
+          <Ionicons
+            name={showAttachMenu ? "close" : "add"}
+            size={32}
+            color={colors.text}
+          />
         </TouchableOpacity>
 
         <TextInput
@@ -130,6 +169,7 @@ const MessageInput = ({
           multiline
           numberOfLines={5}
           editable={!disabled}
+          onFocus={() => setShowAttachMenu(false)}
         />
 
         <TouchableOpacity
