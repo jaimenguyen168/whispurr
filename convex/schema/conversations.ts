@@ -33,6 +33,7 @@ export const messages = defineTable({
   type: v.union(v.literal("text"), v.literal("image"), v.literal("file"), v.literal("gif")),
   storageId: v.optional(v.id("_storage")),
   gifUrl: v.optional(v.string()),
+  mimeType: v.optional(v.string()),
   status: v.union(
     v.literal("sending"),
     v.literal("sent"),

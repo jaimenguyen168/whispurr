@@ -27,6 +27,7 @@ import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
+import * as FileSystem from "expo-file-system/legacy";
 import { useAuth } from "@clerk/expo";
 import { useConversationKey } from "@/src/hooks/useConversationKey";
 import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
@@ -137,22 +138,33 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   };
 
   const uploadAndSendImage = async (uri: string, mimeType?: string) => {
+    if (!conversationKey) throw new Error("Conversation key not ready");
+
+    // Read image as base64 string
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: "base64",
+    });
+
+    // Encrypt the base64 content
+    const { encryptedContent, iv } = await encryptMessage(base64, conversationKey);
+
+    // Upload ciphertext as plain text to Convex storage
     const uploadUrl = await generateUploadUrl();
-    const response = await fetch(uri);
-    const blob = await response.blob();
     const uploadResponse = await fetch(uploadUrl, {
       method: "POST",
-      headers: { "Content-Type": mimeType ?? "image/jpeg" },
-      body: blob,
+      headers: { "Content-Type": "text/plain" },
+      body: encryptedContent,
     });
     if (!uploadResponse.ok) throw new Error("Upload failed");
     const { storageId } = await uploadResponse.json();
+
     await createMessage({
       conversationId,
       content: "",
-      iv: "",
+      iv,
       type: "image",
       storageId,
+      mimeType: mimeType ?? "image/jpeg",
     });
   };
 

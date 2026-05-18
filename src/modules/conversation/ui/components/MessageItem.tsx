@@ -46,6 +46,7 @@ import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
 import LinkPreviewCard from "@/src/modules/conversation/ui/components/LinkPreviewCard";
+import EncryptedImage from "@/src/modules/conversation/ui/components/EncryptedImage";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import * as Clipboard from "expo-clipboard";
@@ -377,11 +378,23 @@ const MessageItem = ({
     >
       {(message.type === "image" || message.type === "gif") && (message as any).imageUrl ? (
         <View style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}>
-          <Image
-            source={(message as any).imageUrl}
-            style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}
-            contentFit="cover"
-          />
+          {message.type === "image" && message.iv && conversationKey ? (
+            <EncryptedImage
+              url={(message as any).imageUrl}
+              iv={message.iv}
+              conversationKey={conversationKey}
+              mimeType={(message as any).mimeType ?? "image/jpeg"}
+              width={MEDIA_WIDTH}
+              height={MEDIA_WIDTH}
+              contentFit="cover"
+            />
+          ) : (
+            <Image
+              source={(message as any).imageUrl}
+              style={{ width: MEDIA_WIDTH, height: MEDIA_WIDTH }}
+              contentFit="cover"
+            />
+          )}
           <View
             className={`absolute bottom-0 left-0 right-0 flex-row items-center px-3 py-1.5 ${isFromOtherUser ? "justify-start" : "justify-end"}`}
             style={{ backgroundColor: "rgba(0,0,0,0.4)" }}

@@ -63,6 +63,7 @@ export const createMessage = mutation({
     type: v.union(v.literal("text"), v.literal("image"), v.literal("file"), v.literal("gif")),
     storageId: v.optional(v.id("_storage")),
     gifUrl: v.optional(v.string()),
+    mimeType: v.optional(v.string()),
     replyToMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
@@ -94,6 +95,7 @@ export const createMessage = mutation({
       type: args.type,
       storageId: args.storageId,
       gifUrl: args.gifUrl,
+      mimeType: args.mimeType,
       replyToMessageId: args.replyToMessageId,
       status: "sent",
       updatedAt: Date.now(),
