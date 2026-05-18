@@ -17,6 +17,7 @@ export const conversationParticipants = defineTable({
   joinedAt: v.number(),
   leftAt: v.optional(v.number()),
   isHidden: v.optional(v.boolean()),
+  pinnedAt: v.optional(v.number()),
   lastSeenAt: v.optional(v.number()),
 })
   .index("by_conversation", ["conversationId"])

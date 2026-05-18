@@ -20,7 +20,7 @@ import {
   ConversationHeader1,
   ConversationHeader2,
 } from "@/src/modules/conversation/ui/components/ConversationHeaders";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
@@ -29,6 +29,7 @@ import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
 import { useAuth } from "@clerk/clerk-expo";
 import { useConversationKey } from "@/src/hooks/useConversationKey";
 import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
+import ReportModal from "@/src/modules/conversation/ui/components/ReportModal";
 import { useStreamVideo } from "@/src/hooks/useStreamVideo";
 
 interface ConversationViewProps {
@@ -48,6 +49,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     null,
   );
   const [forwardContent, setForwardContent] = useState<string | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
@@ -66,6 +68,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const deleteConversation = useMutation(
     api.functions.conversations.leaveConversation,
   );
+  const pinConversation = useMutation(api.functions.conversations.pinConversation);
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
 
@@ -82,6 +85,11 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const messages = useQuery(
     api.functions.messages.getMessagesForConversation,
     isDeleting ? "skip" : { conversationId },
+  );
+
+  const reportStatus = useQuery(
+    api.functions.moderation.getReportStatus,
+    otherUser ? { reportedUserId: otherUser._id } : "skip",
   );
 
   const createMessage = useMutation(api.functions.messages.createMessage);
@@ -228,9 +236,21 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     });
   };
 
+  const isPinned = !!conversation?.userParticipant?.pinnedAt;
+
+  const handlePin = async () => {
+    try {
+      await pinConversation({ conversationId });
+    } catch (error) {
+      console.error("Failed to pin conversation:", error);
+    }
+  };
+
   const headerActions = {
-    onPin: () => console.log("Pin conversation"),
-    onReport: () => console.log("Report user"),
+    onPin: handlePin,
+    isPinned,
+    hasReported: reportStatus?.hasReported ?? false,
+    onReport: () => setShowReportModal(true),
     onDelete: handleDeleteConversation,
     onCall: handleVoiceCall,
     onVideoCall: handleVideoCall,
@@ -263,13 +283,24 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <View className="flex-1 bg-app">
+          {isPinned && (
+            <View
+              className="flex-row items-center justify-center gap-1.5 py-1.5 bg-primary-100 dark:bg-primary-400/30"
+              style={{ marginTop: HEADER_HEIGHT + insets.top }}
+            >
+              <AntDesign name="pushpin" size={12} color="#40916c" />
+              <Text className="text-xs font-medium text-primary-600 dark:text-primary-300">
+                Pinned conversation
+              </Text>
+            </View>
+          )}
           <Animated.FlatList
             data={messages || []}
             renderItem={renderMessage}
             keyExtractor={(item) => item._id}
             contentContainerStyle={{
               flexGrow: 1,
-              paddingTop: HEADER_HEIGHT + insets.top + 16,
+              paddingTop: isPinned ? 16 : HEADER_HEIGHT + insets.top + 16,
               gap: 12,
               justifyContent: "flex-end",
               paddingBottom: 16,
@@ -310,6 +341,14 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
         onClose={() => setForwardContent(null)}
         decryptedContent={forwardContent || ""}
         clerkUserId={clerkUserId}
+      />
+
+      <ReportModal
+        visible={showReportModal}
+        onClose={() => setShowReportModal(false)}
+        reportedUserId={otherUser._id}
+        reportedUsername={otherUser.username}
+        conversationId={conversationId}
       />
     </View>
   );

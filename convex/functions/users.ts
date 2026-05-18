@@ -43,20 +43,38 @@ export const getUsers = query({
   handler: async (ctx) => {
     const currentUser = await getAuthenticatedUser(ctx);
 
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", currentUser._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", currentUser._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
     const users = await ctx.db
       .query("users")
       .filter((q) => q.neq(q.field("_id"), currentUser._id))
       .collect();
 
     return await Promise.all(
-      users.map(async (user) => {
-        const imageUrl = await getImageUrl(ctx, user.imageUrl);
-        return {
-          ...user,
-          imageUrl,
-          notificationsEnabled: user.notificationsEnabled ?? true, // Default to true
-        };
-      }),
+      users
+        .filter((u) => !blockedIds.has(u._id))
+        .map(async (user) => {
+          const imageUrl = await getImageUrl(ctx, user.imageUrl);
+          return {
+            ...user,
+            imageUrl,
+            notificationsEnabled: user.notificationsEnabled ?? true,
+          };
+        }),
     );
   },
 });
@@ -204,6 +222,22 @@ export const getFriends = query({
   handler: async (ctx) => {
     const user = await getAuthenticatedUser(ctx);
 
+    const [blockedByMe, blockedMe] = await Promise.all([
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocker", (q) => q.eq("blockerId", user._id))
+        .collect(),
+      ctx.db
+        .query("blockedUsers")
+        .withIndex("by_blocked", (q) => q.eq("blockedUserId", user._id))
+        .collect(),
+    ]);
+
+    const blockedIds = new Set([
+      ...blockedByMe.map((b) => b.blockedUserId),
+      ...blockedMe.map((b) => b.blockerId),
+    ]);
+
     const participations = await ctx.db
       .query("conversationParticipants")
       .withIndex("by_user_active", (q) =>
@@ -222,6 +256,7 @@ export const getFriends = query({
           .first();
 
         if (!otherParticipant) return null;
+        if (blockedIds.has(otherParticipant.userId)) return null;
 
         const friend = await ctx.db.get(otherParticipant.userId);
         if (!friend) return null;

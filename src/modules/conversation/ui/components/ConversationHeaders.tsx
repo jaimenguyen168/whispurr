@@ -1,5 +1,6 @@
 import { Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { AntDesign } from "@expo/vector-icons";
 import { User } from "@/src/types/convex";
 import { Image } from "expo-image";
 import React from "react";
@@ -14,6 +15,8 @@ interface ConversationHeaderActions {
   onDelete?: () => void;
   onCall?: () => void;
   onVideoCall?: () => void;
+  isPinned?: boolean;
+  hasReported?: boolean;
 }
 
 export const ConversationHeader1 = ({
@@ -26,7 +29,7 @@ export const ConversationHeader1 = ({
   actions?: ConversationHeaderActions;
 }) => {
   const colors = useThemeColors();
-  const { onPin, onReport, onDelete, onCall, onVideoCall } = actions;
+  const { onPin, onReport, onDelete, onCall, onVideoCall, isPinned, hasReported } = actions;
 
   return (
     <View className="px-4 pb-3 flex-row justify-between items-center gap-2 w-full">
@@ -84,16 +87,16 @@ export const ConversationHeader1 = ({
             <ContextMenu>
               <ContextMenu.Items>
                 <Button
-                  systemImage="pin.fill"
+                  systemImage={isPinned ? "pin.slash.fill" : "pin.fill"}
                   onPress={onPin || (() => console.log("Pin conversation"))}
                 >
-                  Pin conversation
+                  {isPinned ? "Unpin this conversation" : "Pin this conversation"}
                 </Button>
                 <Button
                   systemImage="flag.fill"
-                  onPress={onReport || (() => console.log("Report user"))}
+                  onPress={hasReported ? undefined : (onReport || (() => {}))}
                 >
-                  Report user
+                  {hasReported ? "Already reported" : "Report user"}
                 </Button>
                 <Button
                   systemImage="trash.fill"
@@ -133,7 +136,7 @@ export const ConversationHeader2 = ({
   const colors = useThemeColors();
   const insets = useSafeAreaInsets();
   const { isDark } = useTheme();
-  const { onPin, onReport, onDelete, onCall, onVideoCall } = actions;
+  const { onPin, onReport, onDelete, onCall, onVideoCall, isPinned, hasReported } = actions;
 
   return (
     <BlurView
@@ -172,16 +175,16 @@ export const ConversationHeader2 = ({
                 {/*  Video call*/}
                 {/*</Button>*/}
                 <Button
-                  systemImage="pin.fill"
+                  systemImage={isPinned ? "pin.slash.fill" : "pin.fill"}
                   onPress={onPin || (() => console.log("Pin conversation"))}
                 >
-                  Pin conversation
+                  {isPinned ? "Unpin this conversation" : "Pin this conversation"}
                 </Button>
                 <Button
                   systemImage="flag.fill"
-                  onPress={onReport || (() => console.log("Report user"))}
+                  onPress={hasReported ? undefined : (onReport || (() => {}))}
                 >
-                  Report user
+                  {hasReported ? "Already reported" : "Report user"}
                 </Button>
                 <Button
                   systemImage="trash.fill"

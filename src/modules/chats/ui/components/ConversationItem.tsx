@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import { Image } from "expo-image";
+import { Ionicons, AntDesign } from "@expo/vector-icons";
 import { formatTime } from "@/src/utils/time";
 import { ConversationWithDetails } from "@/src/types/convex";
 import ReanimatedSwipeable, {
@@ -210,9 +211,14 @@ const ConversationItem = ({
               <Text className="font-bold text-base text-main">
                 {otherParticipant.username}
               </Text>
-              <Text className="text-xs text-muted">
-                {formatTime(conversation.lastMessageAt)}
-              </Text>
+              <View className="flex-row items-center gap-2">
+                {conversation.userParticipant?.pinnedAt && (
+                  <AntDesign name="pushpin" size={12} color="#40916c" />
+                )}
+                <Text className="text-xs text-muted">
+                  {formatTime(conversation.lastMessageAt)}
+                </Text>
+              </View>
             </View>
 
             <Text
@@ -220,7 +226,9 @@ const ConversationItem = ({
               numberOfLines={1}
               ellipsizeMode="tail"
             >
-              {decryptedLastMessage || "No messages yet"}
+              {decryptedLastMessage
+                ? `${lastMessage?.senderId === currentUserId ? "You: " : ""}${decryptedLastMessage}`
+                : "No messages yet"}
             </Text>
           </View>
         </TouchableOpacity>

@@ -31,7 +31,7 @@ export const ChatsHeader1 = ({
 
       <View className="flex-row gap-4">
         {conversations.length > 0 && (
-          <Link href={"/chats/add-conversation"} asChild>
+          <Link href={"/chats/search-conversations"} asChild>
             <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
               <Ionicons name="search" size={20} color="#081c15" />
             </TouchableOpacity>
@@ -67,11 +67,18 @@ export const ChatsHeader2 = () => {
             </TouchableOpacity>
           </Link>
         </View>
-        <Link href={"/chats/add-conversation"} asChild>
-          <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
-            <Ionicons name="add" size={24} color="#081c15" />
-          </TouchableOpacity>
-        </Link>
+        <View className="flex-row gap-3">
+          <Link href={"/chats/search-conversations"} asChild>
+            <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
+              <Ionicons name="search" size={20} color="#081c15" />
+            </TouchableOpacity>
+          </Link>
+          <Link href={"/chats/add-conversation"} asChild>
+            <TouchableOpacity className="rounded-full items-center justify-center size-10 bg-primary-100 dark:bg-primary-400">
+              <Ionicons name="add" size={24} color="#081c15" />
+            </TouchableOpacity>
+          </Link>
+        </View>
       </View>
     </BlurView>
   );

@@ -5,6 +5,7 @@ import {
   conversations,
   messages,
 } from "./schema/conversations";
+import { reports, blockedUsers } from "./schema/moderation";
 
 export default defineSchema({
   users: users,
@@ -12,4 +13,7 @@ export default defineSchema({
   conversations: conversations,
   conversationParticipants: conversationParticipants,
   messages: messages,
+
+  reports: reports,
+  blockedUsers: blockedUsers,
 });
