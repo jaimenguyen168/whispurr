@@ -9,7 +9,7 @@ import { ThemeColors } from "@/src/constants/ThemeColors";
 import FormField from "@/src/modules/auth/ui/components/FormField";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { validateFormData } from "@/src/utils/form-validator";
-import { useSignIn } from "@clerk/clerk-expo";
+import { useSignIn } from "@clerk/expo";
 import {
   getClerkErrorMessage,
   loginSchema,

@@ -6,7 +6,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ConversationId, Message } from "@/src/types/convex";
@@ -27,12 +27,16 @@ import MessageItem from "@/src/modules/conversation/ui/components/MessageItem";
 import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 import { useConversationKey } from "@/src/hooks/useConversationKey";
 import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
 import ReportModal from "@/src/modules/conversation/ui/components/ReportModal";
 import { useStreamVideo } from "@/src/hooks/useStreamVideo";
-import { GiphyDialog, GiphyDialogEvent, GiphyContentType } from "@giphy/react-native-sdk";
+import {
+  GiphyDialog,
+  GiphyDialogEvent,
+  GiphyContentType,
+} from "@giphy/react-native-sdk";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -55,6 +59,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
 
   const insets = useSafeAreaInsets();
   const scrollOffset = useSharedValue(0);
+  const flatListRef = useRef<any>(null);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -70,7 +75,9 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const deleteConversation = useMutation(
     api.functions.conversations.leaveConversation,
   );
-  const pinConversation = useMutation(api.functions.conversations.pinConversation);
+  const pinConversation = useMutation(
+    api.functions.conversations.pinConversation,
+  );
 
   const currentUser = useQuery(api.functions.users.getCurrentUser);
 
@@ -140,13 +147,22 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     });
     if (!uploadResponse.ok) throw new Error("Upload failed");
     const { storageId } = await uploadResponse.json();
-    await createMessage({ conversationId, content: "", iv: "", type: "image", storageId });
+    await createMessage({
+      conversationId,
+      content: "",
+      iv: "",
+      type: "image",
+      storageId,
+    });
   };
 
   const handlePickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission required", "Allow access to your photo library to send images.");
+      Alert.alert(
+        "Permission required",
+        "Allow access to your photo library to send images.",
+      );
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -195,7 +211,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const handleOpenCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert("Permission required", "Allow access to your camera to take photos.");
+      Alert.alert(
+        "Permission required",
+        "Allow access to your camera to take photos.",
+      );
       return;
     }
     let result;
@@ -207,7 +226,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
       });
     } catch (error: any) {
       if (error?.message?.includes("not available on simulator")) {
-        Alert.alert("Not available", "Camera is not available on the simulator.");
+        Alert.alert(
+          "Not available",
+          "Camera is not available on the simulator.",
+        );
       } else {
         Alert.alert("Error", "Could not open camera. Please try again.");
       }
@@ -262,6 +284,10 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     }
   };
 
+  const scrollToBottom = (animated = true) => {
+    flatListRef.current?.scrollToOffset({ offset: 999999, animated });
+  };
+
   if (isDeleting) {
     return (
       <View className="flex-1 items-center justify-center">
@@ -308,7 +334,12 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   );
 
   const handleVoiceCall = () => {
-    console.log("[ConversationView] Voice call tapped — isReady:", isReady, "otherUser:", otherUser?._id);
+    console.log(
+      "[ConversationView] Voice call tapped — isReady:",
+      isReady,
+      "otherUser:",
+      otherUser?._id,
+    );
     if (!otherUser) return;
     startCall({
       callId: `voice_${conversationId}`,
@@ -321,7 +352,12 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
   };
 
   const handleVideoCall = () => {
-    console.log("[ConversationView] Video call tapped — isReady:", isReady, "otherUser:", otherUser?._id);
+    console.log(
+      "[ConversationView] Video call tapped — isReady:",
+      isReady,
+      "otherUser:",
+      otherUser?._id,
+    );
     if (!otherUser) return;
     startCall({
       callId: `video_${conversationId}`,
@@ -392,6 +428,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
             </View>
           )}
           <Animated.FlatList
+            ref={flatListRef}
             data={messages || []}
             renderItem={renderMessage}
             keyExtractor={(item) => item._id}
@@ -400,12 +437,14 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
               paddingTop: isPinned ? 16 : HEADER_HEIGHT + insets.top + 16,
               gap: 12,
               justifyContent: "flex-end",
-              paddingBottom: 16,
+              paddingBottom: 24,
             }}
             ListEmptyComponent={renderEmptyState}
             onScroll={scrollHandler}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => scrollToBottom(false)}
+            onLayout={() => scrollToBottom(false)}
           />
 
           {hasOtherUserLeft && (

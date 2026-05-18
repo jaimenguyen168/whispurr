@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
-import { useSSO } from "@clerk/clerk-expo";
+import { useSSO } from "@clerk/expo";
 import {
   View,
   Platform,

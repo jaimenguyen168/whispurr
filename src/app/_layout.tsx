@@ -13,8 +13,8 @@ import {
 } from "@expo-google-fonts/nunito";
 import { ConvexReactClient } from "convex/react";
 import { ActivityIndicator, View } from "react-native";
-import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/clerk-expo";
-import { tokenCache } from "@clerk/clerk-expo/token-cache";
+import { ClerkLoaded, ClerkProvider, useAuth } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { ThemeColors } from "@/src/constants/ThemeColors";
 import { ThemeProvider } from "@/src/providers/ThemeProvider";

@@ -45,6 +45,7 @@ import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
+import LinkPreviewCard from "@/src/modules/conversation/ui/components/LinkPreviewCard";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import * as Clipboard from "expo-clipboard";
@@ -259,7 +260,11 @@ const MessageItem = ({
     const layout = await measureMessagePosition();
     setMessageLayout(layout);
 
-    const targetY = screenHeight * 0.35;
+    // Reserve space for: reaction bar (~90px) + context menu items (~220px) + padding (~80px)
+    const menuHeight = 430;
+    const maxBottomY = screenHeight - menuHeight;
+    // Target: place the message so its bottom sits just above the menu
+    const targetY = Math.min(maxBottomY - layout.height, screenHeight * 0.25);
     const moveUpDistance = targetY - layout.y;
 
     scale.value = withTiming(0.95, { duration: 150 });
@@ -422,29 +427,40 @@ const MessageItem = ({
             </View>
           )}
 
-          <Text
-            className={`text-xl leading-5 font-medium ${
-              isFromOtherUser
-                ? "text-secondary-800 dark:text-secondary-50"
-                : "text-white"
-            }`}
-            style={{ flexShrink: 1 }}
-          >
-            {parseMessageSegments(decryptedContent).map((seg, i) =>
-              seg.type === "url" ? (
+          {(() => {
+            const segments = parseMessageSegments(decryptedContent);
+            const firstUrl = segments.find((s) => s.type === "url")?.value;
+            return (
+              <>
                 <Text
-                  key={i}
-                  className={isFromOtherUser ? "text-primary-500 dark:text-primary-300" : "text-white"}
-                  style={{ textDecorationLine: "underline" }}
-                  onPress={() => Linking.openURL(seg.value)}
+                  className={`text-xl leading-5 font-medium ${
+                    isFromOtherUser
+                      ? "text-secondary-800 dark:text-secondary-50"
+                      : "text-white"
+                  }`}
+                  style={{ flexShrink: 1 }}
                 >
-                  {seg.value}
+                  {segments.map((seg, i) =>
+                    seg.type === "url" ? (
+                      <Text
+                        key={i}
+                        className={isFromOtherUser ? "text-primary-500 dark:text-primary-300" : "text-white"}
+                        style={{ textDecorationLine: "underline" }}
+                        onPress={() => Linking.openURL(seg.value)}
+                      >
+                        {seg.value}
+                      </Text>
+                    ) : (
+                      <Text key={i}>{seg.value}</Text>
+                    )
+                  )}
                 </Text>
-              ) : (
-                <Text key={i}>{seg.value}</Text>
-              )
-            )}
-          </Text>
+                {firstUrl && (
+                  <LinkPreviewCard url={firstUrl} isFromOtherUser={isFromOtherUser} />
+                )}
+              </>
+            );
+          })()}
 
           <View
             className={`flex-row items-center ${

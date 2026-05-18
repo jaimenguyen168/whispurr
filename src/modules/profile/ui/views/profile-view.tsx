@@ -11,7 +11,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { router } from "expo-router";
 import SettingsItem from "@/src/modules/profile/ui/components/SettingsItem";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme, useThemeColors } from "@/src/providers/ThemeProvider";
 import { ThemeColors } from "@/src/constants/ThemeColors";

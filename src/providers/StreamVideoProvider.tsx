@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/expo";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StyleSheet } from "react-native";
 import {
