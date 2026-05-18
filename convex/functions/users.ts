@@ -199,6 +199,47 @@ export const getUserNotificationPreference = query({
   },
 });
 
+export const getFriends = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await getAuthenticatedUser(ctx);
+
+    const participations = await ctx.db
+      .query("conversationParticipants")
+      .withIndex("by_user_active", (q) =>
+        q.eq("userId", user._id).eq("leftAt", undefined),
+      )
+      .collect();
+
+    const friends = await Promise.all(
+      participations.map(async (participation) => {
+        const otherParticipant = await ctx.db
+          .query("conversationParticipants")
+          .withIndex("by_conversation", (q) =>
+            q.eq("conversationId", participation.conversationId),
+          )
+          .filter((q) => q.neq(q.field("userId"), user._id))
+          .first();
+
+        if (!otherParticipant) return null;
+
+        const friend = await ctx.db.get(otherParticipant.userId);
+        if (!friend) return null;
+
+        const imageUrl = await getImageUrl(ctx, friend.imageUrl);
+
+        return {
+          ...friend,
+          imageUrl,
+          conversationId: participation.conversationId,
+        };
+      }),
+    );
+
+    return friends.filter((f): f is NonNullable<typeof f> => f !== null);
+  },
+});
+
 export const clearPushToken = mutation({
   args: {},
   handler: async (ctx) => {

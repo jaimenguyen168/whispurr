@@ -11,6 +11,7 @@ import { Image } from "expo-image";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
+import { useConversationKey } from "@/src/hooks/useConversationKey";
 import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -39,6 +40,9 @@ const ForwardMessageModal = ({
     api.functions.conversations.getConversationsForUser,
   );
   const createMessage = useMutation(api.functions.messages.createMessage);
+  const targetConversationKey = useConversationKey(
+    selectedConversationId as any,
+  );
 
   const handleSelect = (conversationId: string) => {
     setSelectedConversationId((prev) =>
@@ -48,14 +52,17 @@ const ForwardMessageModal = ({
 
   const handleSend = async () => {
     if (!selectedConversationId || !clerkUserId || isSending) return;
+    if (!targetConversationKey) {
+      console.warn("[ForwardModal] Conversation key not ready yet");
+      return;
+    }
 
     setIsSending(true);
 
     try {
       const { encryptedContent, iv } = await encryptMessage(
         decryptedContent,
-        selectedConversationId,
-        clerkUserId,
+        targetConversationKey,
       );
 
       await createMessage({

@@ -313,3 +313,33 @@ export const updateLastSeenAt = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Shared conversation encryption key.
+ *
+ * First caller provides a newly-generated key; subsequent callers (on any
+ * device, any user in the conversation) receive the same stored key.
+ * The key is a random 64-char hex string (256 bits) generated on the client.
+ */
+export const getOrSetConversationKey = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    proposedKey: v.string(), // ignored if a key already exists
+  },
+  handler: async (ctx, args) => {
+    await getAuthenticatedUser(ctx); // ensure caller is authenticated
+
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+
+    if (conversation.lastMessageEncryptionKey) {
+      return conversation.lastMessageEncryptionKey;
+    }
+
+    // First time — store the proposed key
+    await ctx.db.patch(args.conversationId, {
+      lastMessageEncryptionKey: args.proposedKey,
+    });
+    return args.proposedKey;
+  },
+});

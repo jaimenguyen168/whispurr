@@ -27,7 +27,9 @@ import { router } from "expo-router";
 import MessageInput from "@/src/modules/conversation/ui/components/MessageInput";
 import { encryptMessage } from "@/src/modules/conversation/utils/crypto";
 import { useAuth } from "@clerk/clerk-expo";
+import { useConversationKey } from "@/src/hooks/useConversationKey";
 import ForwardMessageModal from "@/src/modules/conversation/ui/components/ForwardMessageModal";
+import { useStreamVideo } from "@/src/hooks/useStreamVideo";
 
 interface ConversationViewProps {
   conversationId: ConversationId;
@@ -37,6 +39,8 @@ const HEADER_HEIGHT = 60;
 
 const ConversationView = ({ conversationId }: ConversationViewProps) => {
   const { userId: clerkUserId } = useAuth();
+  const { startCall, isReady } = useStreamVideo();
+  const conversationKey = useConversationKey(conversationId);
   const [message, setMessage] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -84,14 +88,17 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
 
   const sendMessage = async () => {
     if (!message.trim() || !currentUser || isSending || !clerkUserId) return;
+    if (!conversationKey) {
+      console.warn("[ConversationView] Conversation key not ready yet");
+      return;
+    }
 
     setIsSending(true);
 
     try {
       const { encryptedContent, iv } = await encryptMessage(
         message.trim(),
-        conversationId,
-        clerkUserId,
+        conversationKey,
       );
 
       await createMessage({
@@ -173,6 +180,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
       otherUser={otherUser}
       conversationId={conversationId}
       clerkUserId={clerkUserId}
+      conversationKey={conversationKey}
       onReply={handleReply}
       onForward={(content) => setForwardContent(content)}
     />
@@ -194,12 +202,38 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     </View>
   );
 
+  const handleVoiceCall = () => {
+    console.log("[ConversationView] Voice call tapped — isReady:", isReady, "otherUser:", otherUser?._id);
+    if (!otherUser) return;
+    startCall({
+      callId: `voice_${conversationId}`,
+      callType: "audio_room",
+      receiverConvexUserId: otherUser._id,
+    }).catch((err) => {
+      console.error("[ConversationView] Voice call failed:", err);
+      Alert.alert("Call failed", err?.message || "Could not start call.");
+    });
+  };
+
+  const handleVideoCall = () => {
+    console.log("[ConversationView] Video call tapped — isReady:", isReady, "otherUser:", otherUser?._id);
+    if (!otherUser) return;
+    startCall({
+      callId: `video_${conversationId}`,
+      callType: "default",
+      receiverConvexUserId: otherUser._id,
+    }).catch((err) => {
+      console.error("[ConversationView] Video call failed:", err);
+      Alert.alert("Call failed", err?.message || "Could not start call.");
+    });
+  };
+
   const headerActions = {
     onPin: () => console.log("Pin conversation"),
     onReport: () => console.log("Report user"),
     onDelete: handleDeleteConversation,
-    onCall: () => console.log("Start voice call"),
-    onVideoCall: () => console.log("Start video call"),
+    onCall: handleVoiceCall,
+    onVideoCall: handleVideoCall,
   };
 
   return (
@@ -267,6 +301,7 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
           currentUser={currentUser}
           otherUser={otherUser}
           clerkUserId={clerkUserId}
+          conversationKey={conversationKey}
         />
       </KeyboardAvoidingView>
 

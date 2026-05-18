@@ -22,8 +22,7 @@ import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 
 import "react-native-get-random-values";
 import * as ExpoStandardWebCrypto from "expo-standard-web-crypto";
-import { useKeySetup } from "@/src/hooks/useKeySetup";
-import { KeySetupProvider } from "@/src/providers/KeySetupProvider";
+import { StreamVideoProvider } from "@/src/providers/StreamVideoProvider";
 
 ExpoStandardWebCrypto.polyfillWebCrypto();
 
@@ -52,13 +51,15 @@ export default function RootLayout() {
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
       <ClerkLoaded>
         <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-          <KeySetupProvider>
-            <GestureHandlerRootView>
-              <ThemeProvider>
-                <RootAuthLayout />
-              </ThemeProvider>
-            </GestureHandlerRootView>
-          </KeySetupProvider>
+          <GestureHandlerRootView className="flex-1">
+            <StreamVideoProvider>
+              <GestureHandlerRootView>
+                <ThemeProvider>
+                  <RootAuthLayout />
+                </ThemeProvider>
+              </GestureHandlerRootView>
+            </StreamVideoProvider>
+          </GestureHandlerRootView>
         </ConvexProviderWithClerk>
       </ClerkLoaded>
     </ClerkProvider>
@@ -69,7 +70,6 @@ const RootAuthLayout = () => {
   const { isLoaded, isSignedIn } = useAuth();
 
   usePushNotifications(isSignedIn || false);
-  useKeySetup();
 
   if (!isLoaded) {
     return (

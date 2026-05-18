@@ -17,6 +17,7 @@ interface MessageInputProps {
   currentUser?: User;
   otherUser?: User;
   clerkUserId: string;
+  conversationKey?: string | null;
 }
 
 const MessageInput = ({
@@ -31,19 +32,19 @@ const MessageInput = ({
   currentUser,
   otherUser,
   clerkUserId,
+  conversationKey,
 }: MessageInputProps) => {
   const colors = useThemeColors();
   const [decryptedReplyContent, setDecryptedReplyContent] = useState("");
 
   useEffect(() => {
     const decryptReplyContent = async () => {
-      if (replyingToMessage && clerkUserId) {
+      if (replyingToMessage && conversationKey) {
         try {
           const decrypted = await decryptMessage(
             replyingToMessage.content,
-            replyingToMessage.conversationId,
+            conversationKey,
             replyingToMessage.iv,
-            clerkUserId,
           );
           setDecryptedReplyContent(decrypted);
         } catch (error) {
@@ -56,7 +57,7 @@ const MessageInput = ({
     };
 
     decryptReplyContent();
-  }, [replyingToMessage, clerkUserId]);
+  }, [replyingToMessage, conversationKey]);
 
   const getReplyToUsername = () => {
     if (!replyingToMessage || !currentUser) return "";

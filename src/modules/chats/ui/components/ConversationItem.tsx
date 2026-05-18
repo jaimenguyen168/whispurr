@@ -19,7 +19,7 @@ import Reanimated, {
 import { scheduleOnRN } from "react-native-worklets";
 import SwipeAction from "@/src/components/SwipeAction";
 import { decryptMessage } from "@/src/modules/conversation/utils/crypto";
-import { useKeyReady } from "@/src/providers/KeySetupProvider";
+import { useConversationKey } from "@/src/hooks/useConversationKey";
 
 interface ConversationItemProps {
   conversation: ConversationWithDetails;
@@ -40,7 +40,7 @@ const ConversationItem = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [decryptedLastMessage, setDecryptedLastMessage] = useState("");
 
-  const { isKeyReady } = useKeyReady();
+  const conversationKey = useConversationKey(conversation._id);
 
   const otherParticipantRecord = conversation.allParticipants?.find(
     (participant) => participant.userId !== currentUserId,
@@ -64,34 +64,19 @@ const ConversationItem = ({
 
   useEffect(() => {
     const decryptLastMessage = async () => {
-      if (!isKeyReady) {
-        console.log("[ConversationItem] Waiting for key setup...");
-        return;
-      }
+      if (!conversationKey) return;
 
       if (!lastMessage?.content || !lastMessage?.iv) {
-        console.log("[ConversationItem] No last message or iv:", {
-          hasContent: !!lastMessage?.content,
-          hasIv: !!lastMessage?.iv,
-          lastMessage,
-        });
         setDecryptedLastMessage("");
         return;
       }
 
       try {
-        console.log("[ConversationItem] Attempting decrypt:", {
-          conversationId: conversation._id,
-          iv: lastMessage.iv,
-          contentPreview: lastMessage.content.slice(0, 20),
-        });
         const decrypted = await decryptMessage(
           lastMessage.content,
-          conversation._id,
+          conversationKey,
           lastMessage.iv,
-          clerkUserId,
         );
-        console.log("[ConversationItem] Decrypted:", decrypted);
         setDecryptedLastMessage(decrypted);
       } catch (error) {
         console.error("[ConversationItem] Decrypt error:", error);
@@ -100,14 +85,7 @@ const ConversationItem = ({
     };
 
     decryptLastMessage();
-  }, [
-    lastMessage?._id,
-    lastMessage?.iv,
-    conversation._id,
-    isKeyReady,
-    clerkUserId,
-    lastMessage,
-  ]);
+  }, [lastMessage?._id, lastMessage?.iv, conversationKey]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

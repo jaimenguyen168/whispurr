@@ -22,7 +22,6 @@ import { useThemeColors } from "@/src/providers/ThemeProvider";
 import { EmojiPopup } from "react-native-emoji-popup";
 import MessageReactionBadge from "@/src/modules/conversation/ui/components/MessageReactionBadge";
 import MessageModal from "@/src/modules/conversation/ui/components/MessageModal";
-import { useKeyReady } from "@/src/providers/KeySetupProvider";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import * as Clipboard from "expo-clipboard";
@@ -40,6 +39,7 @@ interface MessageItemProps {
   otherUser?: User;
   conversationId: string;
   clerkUserId: string;
+  conversationKey: string | null;
   onReply?: (message: Message) => void;
   onForward?: (decryptedContent: string) => void;
 }
@@ -50,11 +50,11 @@ const MessageItem = ({
   otherUser,
   conversationId,
   clerkUserId,
+  conversationKey,
   onReply,
   onForward,
 }: MessageItemProps) => {
   const colors = useThemeColors();
-  const { isKeyReady } = useKeyReady();
   const isFromOtherUser = message.senderId === otherUser?._id;
   const messageContainerRef = useRef<View>(null);
   const hasReactions = message.reactions && message.reactions.length > 0;
@@ -102,15 +102,14 @@ const MessageItem = ({
   // ─── Decryption ──────────────────────────────────────────────────
 
   useEffect(() => {
-    if (!isKeyReady || !clerkUserId) return;
+    if (!conversationKey) return;
 
     const decryptContent = async () => {
       try {
         const decrypted = await decryptMessage(
           message.content,
-          conversationId,
+          conversationKey,
           message.iv,
-          clerkUserId,
         );
         setDecryptedContent(decrypted);
       } catch (error) {
@@ -120,18 +119,17 @@ const MessageItem = ({
     };
 
     decryptContent();
-  }, [message.content, message.iv, conversationId, isKeyReady, clerkUserId]);
+  }, [message.content, message.iv, conversationKey]);
 
   useEffect(() => {
-    if (!isKeyReady || !clerkUserId || !message.replyTo) return;
+    if (!conversationKey || !message.replyTo) return;
 
     const decryptReplyContent = async () => {
       try {
         const decrypted = await decryptMessage(
           message.replyTo!.content,
-          conversationId,
+          conversationKey,
           message.replyTo!.iv,
-          clerkUserId,
         );
         setDecryptedReplyContent(decrypted);
       } catch (error) {
@@ -141,7 +139,7 @@ const MessageItem = ({
     };
 
     decryptReplyContent();
-  }, [message.replyTo, conversationId, clerkUserId, isKeyReady]);
+  }, [message.replyTo, conversationKey]);
 
   // ─── Reaction emojis ─────────────────────────────────────────────
 
