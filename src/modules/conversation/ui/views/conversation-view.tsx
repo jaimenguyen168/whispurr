@@ -288,12 +288,8 @@ const ConversationView = ({ conversationId }: ConversationViewProps) => {
     setReplyingToMessage(message);
   };
 
-  const handleBack = async () => {
-    if (messages?.length === 0) {
-      await executeDeleteConversation();
-    } else {
-      router.dismiss();
-    }
+  const handleBack = () => {
+    router.dismiss();
   };
 
   const scrollToBottom = (animated = true) => {

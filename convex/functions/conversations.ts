@@ -36,19 +36,6 @@ export const getConversationsForUser = query({
         const conversation = await ctx.db.get(participant.conversationId);
         if (!conversation) return null;
 
-        // Check if conversation has any messages
-        const messageCount = await ctx.db
-          .query("messages")
-          .withIndex("by_conversation", (q) =>
-            q.eq("conversationId", participant.conversationId),
-          )
-          .filter((q) => q.eq(q.field("deletedAt"), undefined))
-          .collect()
-          .then((messages) => messages.length);
-
-        // Skip conversations with no messages
-        if (messageCount === 0) return null;
-
         const allParticipants = await ctx.db
           .query("conversationParticipants")
           .withIndex("by_conversation", (q) =>
