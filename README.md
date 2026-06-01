@@ -24,7 +24,7 @@
 
 ## <a name="project-overview">📋 Project Overview</a>
 
-**Whispurr** is a privacy-first encrypted messaging app built with **React Native** and **Expo**. Every message, image, and GIF is encrypted with **AES-256** on your device before it ever leaves — only you and your recipient can read it. Sign up in seconds, chat in real time powered by **Convex**, and stay notified with instant push delivery. No ads, no data harvesting, no compromises.
+**Whispurr** is a privacy-first encrypted messaging app built with **React Native** and **Expo**. Every message, image, and GIF is encrypted with **AES-256** on the user's device before transmission, ensuring that only the sender and recipient can ever read it. Users can sign up in seconds, chat in real time powered by **Convex**, and stay notified with instant push delivery. No ads, no data harvesting, no compromises.
 
 ---
 
