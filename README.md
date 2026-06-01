@@ -1,4 +1,4 @@
-# Whispurr
+<img width="1690" height="931" alt="whispurr-cover" src="https://github.com/user-attachments/assets/effd8a8b-0cab-4dc9-84d5-43fe00f8ec81" />
 
 <div align="center">
   <img src="https://img.shields.io/badge/-React_Native-black?style=for-the-badge&logoColor=white&logo=react&color=20232A" alt="React Native" />
