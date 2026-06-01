@@ -30,35 +30,35 @@
 
 ## <a name="key-features">🔋 Key Features</a>
 
-👉 **End-to-End Encryption**: all messages and media are encrypted with AES-256-CBC on your device before transmission — the server never sees your plaintext
+👉 **End-to-End Encryption**: all messages and media are encrypted with AES-256-CBC on the device before transmission, ensuring the server never sees plaintext content
 
 👉 **Real-Time Messaging**: instant message delivery powered by Convex, with live typing indicators and read receipts
 
-👉 **GIF Support**: search and send GIFs directly in chat via the Giphy SDK — encrypted the same as any other message
+👉 **GIF Support**: GIFs can be searched and sent directly in chat via the Giphy SDK, encrypted the same as any other message
 
-👉 **Image Sharing**: pick photos from your gallery or snap directly with your camera and share them in any conversation
+👉 **Image Sharing**: photos can be picked from the gallery or captured with the camera and shared in any conversation
 
-👉 **Link Previews**: URLs shared in chat automatically generate rich inline previews — title, description, and thumbnail
+👉 **Link Previews**: URLs shared in chat automatically generate rich inline previews with title, description, and thumbnail
 
-👉 **Message Reactions**: long-press any message to react with emoji — expressive without being verbose
+👉 **Message Reactions**: any message can be long-pressed to react with emoji, keeping responses expressive and lightweight
 
-👉 **Pin Conversations**: long-press any chat to pin it to the top of your inbox so your most important people are always front and centre
+👉 **Pin Conversations**: any chat can be pinned to the top of the inbox so the most important conversations are always front and centre
 
 👉 **Push Notifications**: instant push delivery via Expo Notifications, with privacy-preserving lock screen previews that never expose message content
 
-👉 **Authentication**: sign up with email/password or Google OAuth via Clerk, with session management and protected routes
+👉 **Authentication**: users sign up with email/password or Google OAuth via Clerk, with session management and protected routes
 
-👉 **Dark / Light Mode**: system-aware theme that automatically follows your device appearance, with OLED-friendly blacks in dark mode
+👉 **Dark / Light Mode**: system-aware theme that automatically follows the device appearance, with OLED-friendly blacks in dark mode
 
 ---
 
 ## <a name="planned-features">🚀 Planned Features</a>
 
-📞 **Voice & Video Calls**: real-time encrypted voice and video calls built on the Stream Video SDK — no phone number required, no third-party app needed
+📞 **Voice & Video Calls**: real-time encrypted voice and video calls built on the Stream Video SDK, with no phone number required and no third-party app needed
 
-💬 **Group Chats**: create group conversations with multiple contacts, with per-group encryption keys and admin controls
+💬 **Group Chats**: group conversations can be created with multiple contacts, with per-group encryption keys and admin controls
 
-💣 **Disappearing Messages**: set any conversation to auto-delete messages after a configurable timer — 1 hour, 24 hours, or 7 days
+💣 **Disappearing Messages**: any conversation can be set to auto-delete messages after a configurable timer of 1 hour, 24 hours, or 7 days
 
 ---
 
