@@ -38,17 +38,13 @@
 
 👉 **Image Sharing**: photos can be picked from the gallery or captured with the camera and shared in any conversation
 
-👉 **Link Previews**: URLs shared in chat automatically generate rich inline previews with title, description, and thumbnail
-
 👉 **Message Reactions**: any message can be long-pressed to react with emoji, keeping responses expressive and lightweight
 
-👉 **Pin Conversations**: any chat can be pinned to the top of the inbox so the most important conversations are always front and centre
+👉 **Pin Conversations**: any chat can be pinned to the top of the inbox so the most important conversations are always front and center
 
 👉 **Push Notifications**: instant push delivery via Expo Notifications, with privacy-preserving lock screen previews that never expose message content
 
 👉 **Authentication**: users sign up with email/password or Google OAuth via Clerk, with session management and protected routes
-
-👉 **Dark / Light Mode**: system-aware theme that automatically follows the device appearance, with OLED-friendly blacks in dark mode
 
 ---
 
@@ -130,6 +126,5 @@ Then press `i` for iOS Simulator or `a` for Android emulator, or scan the QR cod
 ---
 
 <div align="center">
-  <p>Built with ❤️ using <a href="https://stackcraft.dev">StackCraft</a> · <a href="https://github.com/jaimenguyen168/Whispurr">View Repository</a></p>
   <p>⭐ Star this repo if you find it helpful!</p>
 </div>
